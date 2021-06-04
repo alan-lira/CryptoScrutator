@@ -1,0 +1,2 @@
+# cryptopredictor
+Dummy CryptoCoin Predictor
