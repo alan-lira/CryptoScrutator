@@ -5,3 +5,4 @@
 * Install pip3: `sudo apt install python3-pip -y`
 * Install pandas library: `pip3 install pandas`
 * Install matplotlib library: `pip3 install matplotlib`
+* Install scikit-learn library: `pip3 install scikit-learn`
