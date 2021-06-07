@@ -1,5 +1,5 @@
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # AVOID TENSORFLOW LOGGING
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # AVOID TENSORFLOW LOGGING
 from DatasetManager import *
 from GraphPlotter import *
 from RecurrentNeuralNetworkManager import *
@@ -20,6 +20,8 @@ dataset = datasetManager.sortDatasetByColumn(dataset, date_column)
 
 ## CHOSEN COLUMN OF DATASET: 'Close' (CLOSE PRICE)
 chosen_column = "Close"
+print("Column has null values? " + str(datasetManager.checkIfDatasetColumnHasNullValues(dataset, chosen_column)))
+print("Column null values count: " + str(datasetManager.datasetColumnNullValuesCount(dataset, chosen_column)))
 
 ## PRINT CRYPTOCOIN DATASET's FIRST ROWS (HEAD)
 number_of_rows_to_print = 10
@@ -33,11 +35,7 @@ x_label = "Date"
 x_data = dataset[date_column]
 x_ticks_size = 30
 x_ticks_rotation = 90
-graphPlotter.plot_one_curve_graph(graph_title, dataset, y_label, y_data, x_label, x_data, x_ticks_size, x_ticks_rotation)
-
-## PRINT INFO ABOUT NULL VALUES AT 'Close' COLUMN (CLOSE PRICE)
-print("Column has null values? " + str(datasetManager.checkIfDatasetColumnHasNullValues(dataset, chosen_column)))
-print("Column null values count: " + str(datasetManager.datasetColumnNullValuesCount(dataset, chosen_column)))
+graphPlotter.plotOneCurveGraph(graph_title, dataset, y_label, y_data, x_label, x_data, x_ticks_size, x_ticks_rotation)
 
 ## PRINT CRYPTOCOIN DATASET's 'Close' COLUMN (CLOSE PRICE)
 datasetManager.printDatasetValuesOfColumn(dataset, chosen_column)
@@ -77,9 +75,9 @@ recurrentNeuralNetworkManager.createEmptySequentialModel(model_name)
 # LSTM NETWORK AUTOMATICALLY ASSUMES 1 OR MORE SAMPLES. (1..n)
 number_of_lstm_units = 64
 activation_function = "sigmoid"
-number_of_time_steps = past_size # COULD BE "None" == DISCOVER AT TRAINNING STAGE
+number_of_time_steps = past_size # COULD BE "None" (DISCOVER 'number_of_time_steps' AT TRAINNING STAGE)
 number_of_features = 1 # 'Close' COLUMN (CLOSE PRICE)
-input_shape = (number_of_time_steps, number_of_features) # number_of_samples OMITTED
+input_shape = (number_of_time_steps, number_of_features) # 'number_of_samples' OMITTED
 recurrentNeuralNetworkManager.addLongShortTermMemoryLayer(number_of_lstm_units, activation_function, input_shape)
 
 ## ADD LEAKYRELU LAYER
@@ -91,8 +89,8 @@ fraction_of_the_input_units_to_drop = 0.1
 recurrentNeuralNetworkManager.addDropoutLayer(fraction_of_the_input_units_to_drop)
 
 ## ADD DENSE LAYER
-output_space_dimensionality = 1
-recurrentNeuralNetworkManager.addDenseLayer(output_space_dimensionality)
+number_of_dense_units = 1
+recurrentNeuralNetworkManager.addDenseLayer(number_of_dense_units)
 
 ## LOAD LOSS FUNCTION (MEAN SQUARED ERROR)
 recurrentNeuralNetworkManager.loadMeanSquaredErrorLossFunction()
@@ -133,13 +131,27 @@ graph_title = "Training and Validation Loss"
 y_label = "Loss"
 first_curve_label = "Training Loss"
 first_curve_color = "blue"
-first_curve_data = trainned_model_metrics_history['loss']
+first_curve_data = trainned_model_metrics_history["loss"]
 second_curve_label = "Validation Loss"
-second_curve_color = "red"
-second_curve_data = trainned_model_metrics_history['val_loss']
+second_curve_color = "orange"
+second_curve_data = trainned_model_metrics_history["val_loss"]
 x_label = "Number of Epochs"
 x_ticks_size = number_of_epochs
-graphPlotter.plot_two_curves_graph(graph_title, y_label, first_curve_label, first_curve_color, first_curve_data, second_curve_label, second_curve_color, second_curve_data, x_label, x_ticks_size)
+graphPlotter.plotTwoCurvesGraph(graph_title, y_label, first_curve_label, first_curve_color, first_curve_data, second_curve_label, second_curve_color, second_curve_data, x_label, x_ticks_size)
+
+## PLOT GRAPH: (X = 'Number of Epochs', Y = 'Training Accuracy' Vs 'Validation Accuracy')
+trainned_model_metrics_history = recurrentNeuralNetworkManager.getTrainnedModelMetricsHistory()
+graph_title = "Training and Validation Accuracy"
+y_label = "Accuracy"
+first_curve_label = "Training Accuracy"
+first_curve_color = "blue"
+first_curve_data = trainned_model_metrics_history["accuracy"]
+second_curve_label = "Validation Accuracy"
+second_curve_color = "orange"
+second_curve_data = trainned_model_metrics_history["val_accuracy"]
+x_label = "Number of Epochs"
+x_ticks_size = number_of_epochs
+graphPlotter.plotTwoCurvesGraph(graph_title, y_label, first_curve_label, first_curve_color, first_curve_data, second_curve_label, second_curve_color, second_curve_data, x_label, x_ticks_size)
 
 ## PREDICT WITH TRAINNED MODEL
 recurrentNeuralNetworkManager.predictWithTrainnedModel(normalized_past_test_data_chunk)
@@ -156,8 +168,8 @@ first_curve_label = "Real Price"
 first_curve_color = "blue"
 first_curve_data = real_prices
 second_curve_label = "Predicted Price"
-second_curve_color = "red"
+second_curve_color = "orange"
 second_curve_data = predicted_prices
 x_label = "Days"
 x_ticks_size = len(real_prices)
-graphPlotter.plot_two_curves_graph(graph_title, y_label, first_curve_label, first_curve_color, first_curve_data, second_curve_label, second_curve_color, second_curve_data, x_label, x_ticks_size)
+graphPlotter.plotTwoCurvesGraph(graph_title, y_label, first_curve_label, first_curve_color, first_curve_data, second_curve_label, second_curve_color, second_curve_data, x_label, x_ticks_size)

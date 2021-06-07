@@ -39,8 +39,8 @@ class RecurrentNeuralNetworkManager:
       dropout_layer = Dropout(fraction_of_the_input_units_to_drop)
       self.model.add(dropout_layer)
 
-   def addDenseLayer(self, output_space_dimensionality):
-      dense_layer = Dense(units = output_space_dimensionality)
+   def addDenseLayer(self, number_of_dense_units):
+      dense_layer = Dense(units = number_of_dense_units)
       self.model.add(dense_layer)
 
    def summarizeModel(self):
