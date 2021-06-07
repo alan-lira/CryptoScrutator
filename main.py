@@ -70,15 +70,29 @@ normalized_past_test_data_chunk, normalized_future_test_data_chunk = datasetMana
 model_name = "Crypto_Predictor"
 recurrentNeuralNetworkManager.createEmptySequentialModel(model_name)
 
+"""
 ## ADD LSTM LAYER
 # LSTM NETWORK INPUT LAYER TUPLE: (number_of_samples, number_of_time_steps, number_of_features)
 # LSTM NETWORK AUTOMATICALLY ASSUMES 1 OR MORE SAMPLES. (1..n)
 number_of_lstm_units = 64
-activation_function = "sigmoid"
+activation = "tanh"
+recurrent_activation = "sigmoid"
 number_of_time_steps = past_size # COULD BE "None" (DISCOVER 'number_of_time_steps' AT TRAINNING STAGE)
 number_of_features = 1 # 'Close' COLUMN (CLOSE PRICE)
 input_shape = (number_of_time_steps, number_of_features) # 'number_of_samples' OMITTED
-recurrentNeuralNetworkManager.addLongShortTermMemoryLayer(number_of_lstm_units, activation_function, input_shape)
+recurrentNeuralNetworkManager.addLongShortTermMemoryLayer(number_of_lstm_units, activation, recurrent_activation, input_shape)
+"""
+
+## ADD GRU LAYER
+# GRU NETWORK INPUT LAYER TUPLE: (number_of_samples, number_of_time_steps, number_of_features)
+# GRU NETWORK AUTOMATICALLY ASSUMES 1 OR MORE SAMPLES. (1..n)
+number_of_gru_units = 64
+activation = "tanh"
+recurrent_activation = "sigmoid"
+number_of_time_steps = past_size # COULD BE "None" (DISCOVER 'number_of_time_steps' AT TRAINNING STAGE)
+number_of_features = 1 # 'Close' COLUMN (CLOSE PRICE)
+input_shape = (number_of_time_steps, number_of_features) # 'number_of_samples' OMITTED
+recurrentNeuralNetworkManager.addGatedRecurrentUnitLayer(number_of_gru_units, activation, recurrent_activation, input_shape)
 
 ## ADD LEAKYRELU LAYER
 negative_slope_coefficient = 0.5

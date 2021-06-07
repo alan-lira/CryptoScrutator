@@ -1,4 +1,4 @@
-from keras.layers import Dense, Dropout, LeakyReLU, LSTM
+from keras.layers import Dense, Dropout, GRU, LeakyReLU, LSTM
 from keras.models import Sequential
 from keras.optimizers import Adam
 
@@ -27,9 +27,13 @@ class RecurrentNeuralNetworkManager:
    def compileSequentialModel(self):
       self.model.compile(loss = self.loss_function, optimizer = self.optimizer, metrics = self.metrics)
 
-   def addLongShortTermMemoryLayer(self, number_of_lstm_units, activation_function, input_shape):
-      lstm_layer = LSTM(units = number_of_lstm_units, activation = activation_function, input_shape = input_shape)
+   def addLongShortTermMemoryLayer(self, number_of_lstm_units, activation, recurrent_activation, input_shape):
+      lstm_layer = LSTM(units = number_of_lstm_units, activation = activation, recurrent_activation = recurrent_activation, input_shape = input_shape)
       self.model.add(lstm_layer)
+
+   def addGatedRecurrentUnitLayer(self, number_of_gru_units, activation, recurrent_activation, input_shape):
+      gru_layer = GRU(units = number_of_gru_units, activation = activation, recurrent_activation = recurrent_activation, input_shape = input_shape)
+      self.model.add(gru_layer)
 
    def addLeakyRectifiedLinearUnitLayer(self, negative_slope_coefficient):
       leaky_relu_layer = LeakyReLU(alpha = negative_slope_coefficient)
