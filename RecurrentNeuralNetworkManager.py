@@ -10,6 +10,7 @@ class RecurrentNeuralNetworkManager:
       self.optimizer = None
       self.metrics = []
       self.trainned_model_metrics_history = []
+      self.prediction_history = []
 
    def createEmptySequentialModel(self, model_name):
       self.model = Sequential(name = model_name)
@@ -45,9 +46,9 @@ class RecurrentNeuralNetworkManager:
    def summarizeModel(self):
       print(self.model.summary())
 
-   def trainModel(self, X, Y, validation_split_percent, number_of_epochs, batch_size, shuffle_boolean):
-      trainned_model_result = self.model.fit(X,
-                                             Y,
+   def trainModel(self, x_train, y_train, validation_split_percent, number_of_epochs, batch_size, shuffle_boolean):
+      trainned_model_result = self.model.fit(x_train,
+                                             y_train,
                                              validation_split = validation_split_percent,
                                              epochs = number_of_epochs,
                                              batch_size = batch_size,
@@ -55,7 +56,18 @@ class RecurrentNeuralNetworkManager:
                                              verbose = 2)
       self.trainned_model_metrics_history = trainned_model_result.history
 
+   def getTrainnedModelMetricsHistory(self):
+      return self.trainned_model_metrics_history
+
    def printTrainnedModelMetricsHistory(self):
-      for metric_name in self.trainned_model_metrics_history:
+      trainned_model_metrics_history = self.getTrainnedModelMetricsHistory()
+      for metric_name in trainned_model_metrics_history:
          print("Metric '"+str(metric_name)+"':")
-         print(str(self.trainned_model_metrics_history[metric_name])+"\n")
+         print(str(trainned_model_metrics_history[metric_name])+"\n")
+
+   def predictWithTrainnedModel(self, x_test):
+      prediction_result = self.model.predict(x_test)
+      self.prediction_history = prediction_result
+
+   def getPredictionHistory(self):
+      return self.prediction_history
