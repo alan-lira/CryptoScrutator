@@ -10,11 +10,11 @@ class DatasetManager:
    def load_dataset(self, csv_data_file_path):
       return pandas.read_csv(csv_data_file_path)
 
-   def sort_dataset_by_column(self, dataset, dataset_column):
-      return dataset.sort_values(dataset_column)
+   def sort_dataset_by_column(self, dataset, sorting_column):
+      return dataset.sort_values(sorting_column)
 
-   def print_dataset(self, dataset, number_of_rows):
-      print(dataset.head(number_of_rows))
+   def print_dataset(self, dataset, number_of_rows_to_print):
+      print(dataset.head(number_of_rows_to_print))
 
    def print_dataset_values_of_column(self, dataset, dataset_column):
       for row in range(len(dataset.index)):
@@ -52,4 +52,4 @@ class DatasetManager:
       for index in range(start_index + past_size, end_index):
          normalized_past_data_chunk.append(numpy.reshape(normalized_column_chunk[range(index - past_size, index)], (past_size, 1)))
          normalized_future_data_chunk.append(normalized_column_chunk[index + future_size])
-      return normalized_past_data_chunk, normalized_future_data_chunk
+      return numpy.array(normalized_past_data_chunk), numpy.array(normalized_future_data_chunk)
