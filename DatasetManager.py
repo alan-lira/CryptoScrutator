@@ -1,5 +1,6 @@
 import pandas
 import numpy
+from sklearn.metrics import explained_variance_score, max_error, mean_absolute_error, mean_squared_error, mean_squared_log_error, mean_absolute_percentage_error, median_absolute_error, r2_score, mean_tweedie_deviance
 from sklearn.preprocessing import MinMaxScaler
 
 class DatasetManager:
@@ -56,3 +57,15 @@ class DatasetManager:
          normalized_past_data_chunk.append(numpy.reshape(normalized_column_chunk[range(index - past_size, index)], (past_size, 1)))
          normalized_future_data_chunk.append(normalized_column_chunk[index + future_size])
       return numpy.array(normalized_past_data_chunk), numpy.array(normalized_future_data_chunk)
+
+   def printRegressionMetrics(self, real_values, predicted_values):
+      print("Explained Variance Regression Score: " + str(explained_variance_score(real_values, predicted_values)))
+      print("Maximum Residual Error: " + str(max_error(real_values, predicted_values)))
+      print("Mean Absolute Error: " + str(mean_absolute_error(real_values, predicted_values)))
+      print("Mean Square Error: " + str(mean_squared_error(real_values, predicted_values)))
+      print("Squared Logarithmic (Quadratic) Error: " + str(mean_squared_log_error(real_values, predicted_values)))
+      print("Mean Absolute Percentage Error (Deviation): " + str(mean_absolute_percentage_error(real_values, predicted_values)))
+      print("Median Absolute Error: " + str(median_absolute_error(real_values, predicted_values)))
+      print("Coefficient of Determination (R²): " + str(r2_score(real_values, predicted_values)))
+      print("Mean Poisson Deviance: " + str(mean_tweedie_deviance(real_values, predicted_values, power = 1)))
+      print("Mean Gamma Deviance: " + str(mean_tweedie_deviance(real_values, predicted_values, power = 2)))
