@@ -1,7 +1,8 @@
+from keras import backend
 from keras.layers import Dense, Dropout, GRU, LeakyReLU, LSTM, SimpleRNN
+from keras.metrics import MeanSquaredError, RootMeanSquaredError, MeanAbsoluteError, MeanAbsolutePercentageError, MeanSquaredLogarithmicError, CosineSimilarity, LogCoshError
 from keras.models import Sequential
 from keras.optimizers import SGD, RMSprop, Adam, Adadelta, Adagrad, Adamax, Nadam, Ftrl
-from keras import backend
 
 class RecurrentNeuralNetworkManager:
 

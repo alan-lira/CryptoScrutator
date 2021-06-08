@@ -90,29 +90,6 @@ def executeSimpleRNNModel(model_name,
                                    x_label,
                                    x_ticks_size)
 
-   ## PLOT GRAPH: (X = 'Number of Epochs', Y = 'Training Accuracy' Vs 'Validation Accuracy')
-   simplernn_trainned_model_metrics_history = recurrentNeuralNetworkManager.getTrainnedModelMetricsHistory()
-   graph_title = "Training and Validation Accuracy (SimpleRNN)"
-   y_label = "Accuracy"
-   first_curve_label = "Training Accuracy"
-   first_curve_color = "blue"
-   first_curve_data = simplernn_trainned_model_metrics_history["accuracy"]
-   second_curve_label = "Validation Accuracy"
-   second_curve_color = "orange"
-   second_curve_data = simplernn_trainned_model_metrics_history["val_accuracy"]
-   x_label = "Number of Epochs"
-   x_ticks_size = number_of_epochs
-   graphPlotter.plotTwoCurvesGraph(graph_title,
-                                   y_label,
-                                   first_curve_label,
-                                   first_curve_color,
-                                   first_curve_data,
-                                   second_curve_label,
-                                   second_curve_color,
-                                   second_curve_data,
-                                   x_label,
-                                   x_ticks_size)
-
    ## PREDICT WITH TRAINNED MODEL
    recurrentNeuralNetworkManager.predictWithTrainnedModel(normalized_past_test_data_chunk)
    simplernn_prediction_history = recurrentNeuralNetworkManager.getPredictionHistory()
@@ -148,6 +125,7 @@ def executeSimpleRNNModel(model_name,
    ## PRINT REGRESSION METRICS
    datasetManager.printRegressionMetrics(real_prices, simplernn_predicted_prices)
 
+   ## RETURN SIMPLERNN LAYER BASED MODEL's PREDICTIONS
    return simplernn_predicted_prices
 
 def executeLSTMModel(model_name,
@@ -236,29 +214,6 @@ def executeLSTMModel(model_name,
                                    x_label,
                                    x_ticks_size)
 
-   ## PLOT GRAPH: (X = 'Number of Epochs', Y = 'Training Accuracy' Vs 'Validation Accuracy')
-   lstm_trainned_model_metrics_history = recurrentNeuralNetworkManager.getTrainnedModelMetricsHistory()
-   graph_title = "Training and Validation Accuracy (LSTM)"
-   y_label = "Accuracy"
-   first_curve_label = "Training Accuracy"
-   first_curve_color = "blue"
-   first_curve_data = lstm_trainned_model_metrics_history["accuracy"]
-   second_curve_label = "Validation Accuracy"
-   second_curve_color = "orange"
-   second_curve_data = lstm_trainned_model_metrics_history["val_accuracy"]
-   x_label = "Number of Epochs"
-   x_ticks_size = number_of_epochs
-   graphPlotter.plotTwoCurvesGraph(graph_title,
-                                   y_label,
-                                   first_curve_label,
-                                   first_curve_color,
-                                   first_curve_data,
-                                   second_curve_label,
-                                   second_curve_color,
-                                   second_curve_data,
-                                   x_label,
-                                   x_ticks_size)
-
    ## PREDICT WITH TRAINNED MODEL
    recurrentNeuralNetworkManager.predictWithTrainnedModel(normalized_past_test_data_chunk)
    lstm_prediction_history = recurrentNeuralNetworkManager.getPredictionHistory()
@@ -294,6 +249,7 @@ def executeLSTMModel(model_name,
    ## PRINT REGRESSION METRICS
    datasetManager.printRegressionMetrics(real_prices, lstm_predicted_prices)
 
+   ## RETURN LSTM LAYER BASED MODEL's PREDICTIONS
    return lstm_predicted_prices
 
 def executeGRUModel(model_name,
@@ -382,29 +338,6 @@ def executeGRUModel(model_name,
                                    x_label,
                                    x_ticks_size)
 
-   ## PLOT GRAPH: (X = 'Number of Epochs', Y = 'Training Accuracy' Vs 'Validation Accuracy')
-   gru_trainned_model_metrics_history = recurrentNeuralNetworkManager.getTrainnedModelMetricsHistory()
-   graph_title = "Training and Validation Accuracy (GRU)"
-   y_label = "Accuracy"
-   first_curve_label = "Training Accuracy"
-   first_curve_color = "blue"
-   first_curve_data = gru_trainned_model_metrics_history["accuracy"]
-   second_curve_label = "Validation Accuracy"
-   second_curve_color = "orange"
-   second_curve_data = gru_trainned_model_metrics_history["val_accuracy"]
-   x_label = "Number of Epochs"
-   x_ticks_size = number_of_epochs
-   graphPlotter.plotTwoCurvesGraph(graph_title,
-                                   y_label,
-                                   first_curve_label,
-                                   first_curve_color,
-                                   first_curve_data,
-                                   second_curve_label,
-                                   second_curve_color,
-                                   second_curve_data,
-                                   x_label,
-                                   x_ticks_size)
-
    ## PREDICT WITH TRAINNED MODEL
    recurrentNeuralNetworkManager.predictWithTrainnedModel(normalized_past_test_data_chunk)
    gru_prediction_history = recurrentNeuralNetworkManager.getPredictionHistory()
@@ -440,8 +373,8 @@ def executeGRUModel(model_name,
    ## PRINT REGRESSION METRICS
    datasetManager.printRegressionMetrics(real_prices, gru_predicted_prices)
 
+   ## RETURN GRU LAYER BASED MODEL's PREDICTIONS
    return gru_predicted_prices
-
 
 datasetManager = DatasetManager()
 graphPlotter = GraphPlotter()
@@ -532,7 +465,12 @@ number_of_dense_units = 1
 loss_function_name = "mean_squared_error"
 optimizer_name = "Adam"
 optimizer_learning_rate = 0.0001
-metrics_list = ["accuracy"]
+metrics_list = ["mean_squared_error",
+                "mean_absolute_error",
+                "mean_absolute_percentage_error",
+                "mean_squared_logarithmic_error",
+                "cosine_similarity",
+                "logcosh"]
 validation_split_percent = 0.1
 number_of_epochs = 50
 batch_size = past_size
