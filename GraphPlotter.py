@@ -73,3 +73,31 @@ class GraphPlotter:
       pyplot.xlabel(x_label, fontsize = self.axis_label_fontsize)
       pyplot.legend()
       pyplot.show()
+
+   def plotFourCurvesGraph(self,
+                           graph_title,
+                           y_label,
+                           first_curve_label,
+                           first_curve_color,
+                           first_curve_data,
+                           second_curve_label,
+                           second_curve_color,
+                           second_curve_data,
+                           third_curve_label,
+                           third_curve_color,
+                           third_curve_data,
+                           fourth_curve_label,
+                           fourth_curve_color,
+                           fourth_curve_data,
+                           x_label,
+                           x_ticks_size):
+      pyplot.figure(figsize = (self.a4_height, self.a4_width), dpi = self.dpi, facecolor = self.facecolor, edgecolor = self.edgecolor)
+      pyplot.plot(range(0, x_ticks_size), first_curve_data, first_curve_color, label = first_curve_label)
+      pyplot.plot(range(0, x_ticks_size), second_curve_data, second_curve_color, label = second_curve_label)
+      pyplot.plot(range(0, x_ticks_size), third_curve_data, third_curve_color, label = third_curve_label)
+      pyplot.plot(range(0, x_ticks_size), fourth_curve_data, fourth_curve_color, label = fourth_curve_label)
+      pyplot.title(graph_title, fontsize = self.title_fontsize, fontweight = self.title_fontweight)
+      pyplot.ylabel(y_label, fontsize = self.axis_label_fontsize)
+      pyplot.xlabel(x_label, fontsize = self.axis_label_fontsize)
+      pyplot.legend()
+      pyplot.show()

@@ -4,6 +4,152 @@ from DatasetManager import *
 from GraphPlotter import *
 from RecurrentNeuralNetworkManager import *
 
+def executeSimpleRNNModel(model_name,
+                          number_of_simplernn_units,
+                          activation,
+                          recurrent_initializer,
+                          input_shape,
+                          negative_slope_coefficient,
+                          fraction_of_the_input_units_to_drop,
+                          number_of_dense_units,
+                          loss_function_name,
+                          optimizer_name,
+                          optimizer_learning_rate,
+                          metrics_list,
+                          normalized_past_train_data_chunk,
+                          normalized_future_train_data_chunk,
+                          validation_split_percent,
+                          number_of_epochs,
+                          batch_size,
+                          shuffle_boolean,
+                          real_prices):
+   ## CREATE SIMPLERNN LAYER BASED MODEL
+   recurrentNeuralNetworkManager.createEmptySequentialModel(model_name)
+
+   ## ADD SIMPLERNN LAYER
+   recurrentNeuralNetworkManager.addSimpleRecurrentNeuralNetworkLayer(number_of_simplernn_units,
+                                                             activation,
+                                                             recurrent_initializer,
+                                                             input_shape)
+
+   ## ADD LEAKYRELU LAYER
+   recurrentNeuralNetworkManager.addLeakyRectifiedLinearUnitLayer(negative_slope_coefficient)
+
+   ## ADD DROPOUT LAYER
+   recurrentNeuralNetworkManager.addDropoutLayer(fraction_of_the_input_units_to_drop)
+
+   ## ADD DENSE LAYER
+   recurrentNeuralNetworkManager.addDenseLayer(number_of_dense_units)
+
+   ## LOAD LOSS FUNCTION
+   recurrentNeuralNetworkManager.loadLossFunction(loss_function_name)
+
+   ## LOAD OPTIMIZER
+   recurrentNeuralNetworkManager.loadOptimizer(optimizer_name, optimizer_learning_rate)
+
+   ## LOAD METRICS
+   recurrentNeuralNetworkManager.loadMetrics(metrics_list)
+
+   ## COMPILE MODEL
+   recurrentNeuralNetworkManager.compileSequentialModel()
+
+   ## SUMMARIZE MODEL
+   recurrentNeuralNetworkManager.summarizeModel()
+
+   ## TRAIN MODEL
+   recurrentNeuralNetworkManager.trainModel(normalized_past_train_data_chunk,
+                                            normalized_future_train_data_chunk,
+                                            validation_split_percent,
+                                            number_of_epochs,
+                                            batch_size,
+                                            shuffle_boolean)
+
+   ## PRINT TRAINNED MODEL METRICS HISTORY
+   recurrentNeuralNetworkManager.printTrainnedModelMetricsHistory()
+
+   ## PLOT GRAPH: (X = 'Number of Epochs', Y = 'Training Loss' Vs 'Validation Loss')
+   simplernn_trainned_model_metrics_history = recurrentNeuralNetworkManager.getTrainnedModelMetricsHistory()
+   graph_title = "Training and Validation Loss (SimpleRNN)"
+   y_label = "Loss"
+   first_curve_label = "Training Loss"
+   first_curve_color = "blue"
+   first_curve_data = simplernn_trainned_model_metrics_history["loss"]
+   second_curve_label = "Validation Loss"
+   second_curve_color = "orange"
+   second_curve_data = simplernn_trainned_model_metrics_history["val_loss"]
+   x_label = "Number of Epochs"
+   x_ticks_size = number_of_epochs
+   graphPlotter.plotTwoCurvesGraph(graph_title,
+                                   y_label,
+                                   first_curve_label,
+                                   first_curve_color,
+                                   first_curve_data,
+                                   second_curve_label,
+                                   second_curve_color,
+                                   second_curve_data,
+                                   x_label,
+                                   x_ticks_size)
+
+   ## PLOT GRAPH: (X = 'Number of Epochs', Y = 'Training Accuracy' Vs 'Validation Accuracy')
+   simplernn_trainned_model_metrics_history = recurrentNeuralNetworkManager.getTrainnedModelMetricsHistory()
+   graph_title = "Training and Validation Accuracy (SimpleRNN)"
+   y_label = "Accuracy"
+   first_curve_label = "Training Accuracy"
+   first_curve_color = "blue"
+   first_curve_data = simplernn_trainned_model_metrics_history["accuracy"]
+   second_curve_label = "Validation Accuracy"
+   second_curve_color = "orange"
+   second_curve_data = simplernn_trainned_model_metrics_history["val_accuracy"]
+   x_label = "Number of Epochs"
+   x_ticks_size = number_of_epochs
+   graphPlotter.plotTwoCurvesGraph(graph_title,
+                                   y_label,
+                                   first_curve_label,
+                                   first_curve_color,
+                                   first_curve_data,
+                                   second_curve_label,
+                                   second_curve_color,
+                                   second_curve_data,
+                                   x_label,
+                                   x_ticks_size)
+
+   ## PREDICT WITH TRAINNED MODEL
+   recurrentNeuralNetworkManager.predictWithTrainnedModel(normalized_past_test_data_chunk)
+   simplernn_prediction_history = recurrentNeuralNetworkManager.getPredictionHistory()
+
+   ## REVERT NORMALIZING STEP (INVERSE TRANSFORM)
+   simplernn_predicted_prices = datasetManager.inverseTransformData(simplernn_prediction_history)
+
+   ## PLOT GRAPH: (X = 'Days', Y = 'Real Price' Vs 'Predicted Price')
+   graph_title = cryptocoin + " Price Predictor"
+   y_label = "Close Price (USD)"
+   first_curve_label = "Real Price"
+   first_curve_color = "blue"
+   first_curve_data = real_prices
+   second_curve_label = "Predicted Price (SimpleRNN)"
+   second_curve_color = "red"
+   second_curve_data = simplernn_predicted_prices
+   x_label = "Days"
+   x_ticks_size = len(real_prices)
+   graphPlotter.plotTwoCurvesGraph(graph_title,
+                                   y_label,
+                                   first_curve_label,
+                                   first_curve_color,
+                                   first_curve_data,
+                                   second_curve_label,
+                                   second_curve_color,
+                                   second_curve_data,
+                                   x_label,
+                                   x_ticks_size)
+
+   ## CLEAR MODEL
+   recurrentNeuralNetworkManager.clearModel()
+
+   ## PRINT REGRESSION METRICS
+   datasetManager.printRegressionMetrics(real_prices, simplernn_predicted_prices)
+
+   return simplernn_predicted_prices
+
 def executeLSTMModel(model_name,
                      number_of_lstm_units,
                      activation,
@@ -23,7 +169,7 @@ def executeLSTMModel(model_name,
                      batch_size,
                      shuffle_boolean,
                      real_prices):
-   ## CREATE LSTM MODEL
+   ## CREATE LSTM LAYER BASED MODEL
    recurrentNeuralNetworkManager.createEmptySequentialModel(model_name)
 
    ## ADD LSTM LAYER
@@ -169,7 +315,7 @@ def executeGRUModel(model_name,
                     batch_size,
                     shuffle_boolean,
                     real_prices):
-   ## CREATE GRU MODEL
+   ## CREATE GRU LAYER BASED MODEL
    recurrentNeuralNetworkManager.createEmptySequentialModel(model_name)
 
    ## ADD GRU LAYER
@@ -273,7 +419,7 @@ def executeGRUModel(model_name,
    first_curve_color = "blue"
    first_curve_data = real_prices
    second_curve_label = "Predicted Price (GRU)"
-   second_curve_color = "orange"
+   second_curve_color = "green"
    second_curve_data = gru_predicted_prices
    x_label = "Days"
    x_ticks_size = len(real_prices)
@@ -371,9 +517,11 @@ real_prices = datasetManager.inverseTransformData(normalized_future_test_data_ch
 
 ## DEFINE RNN MODEL PARAMETERS
 model_name = "Crypto_Predictor"
+number_of_simplernn_units = 64 # SIMPLE RNN INPUT LAYER TUPLE: (number_of_samples, number_of_time_steps, number_of_features)
 number_of_lstm_units = 64 # LSTM NETWORK INPUT LAYER TUPLE: (number_of_samples, number_of_time_steps, number_of_features)
 number_of_gru_units = 64 # GRU NETWORK INPUT LAYER TUPLE: (number_of_samples, number_of_time_steps, number_of_features)
 activation = "tanh"
+recurrent_initializer = "orthogonal"
 recurrent_activation = "sigmoid"
 number_of_time_steps = past_size # COULD BE "None" [DISCOVER 'number_of_time_steps' AT TRAINNING STAGE]
 number_of_features = 1 # 'Close' COLUMN (CLOSE PRICE)
@@ -389,6 +537,27 @@ validation_split_percent = 0.1
 number_of_epochs = 50
 batch_size = past_size
 shuffle_boolean = False
+
+## EXECUTE SIMPLERNN MODEL
+simplernn_predicted_prices = executeSimpleRNNModel(model_name,
+                                                   number_of_simplernn_units,
+                                                   activation,
+                                                   recurrent_initializer,
+                                                   input_shape,
+                                                   negative_slope_coefficient,
+                                                   fraction_of_the_input_units_to_drop,
+                                                   number_of_dense_units,
+                                                   loss_function_name,
+                                                   optimizer_name,
+                                                   optimizer_learning_rate,
+                                                   metrics_list,
+                                                   normalized_past_train_data_chunk,
+                                                   normalized_future_train_data_chunk,
+                                                   validation_split_percent,
+                                                   number_of_epochs,
+                                                   batch_size,
+                                                   shuffle_boolean,
+                                                   real_prices)
 
 ## EXECUTE LSTM MODEL
 lstm_predicted_prices = executeLSTMModel(model_name,
@@ -432,30 +601,36 @@ gru_predicted_prices = executeGRUModel(model_name,
                                        shuffle_boolean,
                                        real_prices)
 
-## PLOT GRAPH: (X = 'Days', Y = 'Real Price' Vs 'Predicted Price (LSTM)' Vs 'Predicted Price (GRU)')
+## PLOT GRAPH: (X = 'Days', Y = 'Real Price' Vs 'Predicted Price (SimpleRNN)' Vs 'Predicted Price (LSTM)' Vs 'Predicted Price (GRU)')
 graph_title = cryptocoin + " Price Predictor"
 y_label = "Close Price (USD)"
 first_curve_label = "Real Price"
 first_curve_color = "blue"
 first_curve_data = real_prices
-second_curve_label = "Predicted Price (LSTM)"
+second_curve_label = "Predicted Price (SimpleRNN)"
 second_curve_color = "red"
-second_curve_data = lstm_predicted_prices
-third_curve_label = "Predicted Price (GRU)"
+second_curve_data = simplernn_predicted_prices
+third_curve_label = "Predicted Price (LSTM)"
 third_curve_color = "orange"
-third_curve_data = gru_predicted_prices
+third_curve_data = lstm_predicted_prices
+fourth_curve_label = "Predicted Price (GRU)"
+fourth_curve_color = "green"
+fourth_curve_data = gru_predicted_prices
 x_label = "Days"
 x_ticks_size = len(real_prices)
-graphPlotter.plotThreeCurvesGraph(graph_title,
-                                  y_label,
-                                  first_curve_label,
-                                  first_curve_color,
-                                  first_curve_data,
-                                  second_curve_label,
-                                  second_curve_color,
-                                  second_curve_data,
-                                  third_curve_label,
-                                  third_curve_color,
-                                  third_curve_data,
-                                  x_label,
-                                  x_ticks_size)
+graphPlotter.plotFourCurvesGraph(graph_title,
+                                 y_label,
+                                 first_curve_label,
+                                 first_curve_color,
+                                 first_curve_data,
+                                 second_curve_label,
+                                 second_curve_color,
+                                 second_curve_data,
+                                 third_curve_label,
+                                 third_curve_color,
+                                 third_curve_data,
+                                 fourth_curve_label,
+                                 fourth_curve_color,
+                                 fourth_curve_data,
+                                 x_label,
+                                 x_ticks_size)

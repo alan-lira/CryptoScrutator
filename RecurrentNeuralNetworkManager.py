@@ -1,4 +1,4 @@
-from keras.layers import Dense, Dropout, GRU, LeakyReLU, LSTM
+from keras.layers import Dense, Dropout, GRU, LeakyReLU, LSTM, SimpleRNN
 from keras.models import Sequential
 from keras.optimizers import SGD, RMSprop, Adam, Adadelta, Adagrad, Adamax, Nadam, Ftrl
 from keras import backend
@@ -46,6 +46,17 @@ class RecurrentNeuralNetworkManager:
       self.model.compile(loss = self.loss_function,
                          optimizer = self.optimizer,
                          metrics = self.metrics)
+
+   def addSimpleRecurrentNeuralNetworkLayer(self,
+                                            number_of_simplernn_units,
+                                            activation,
+                                            recurrent_initializer,
+                                            input_shape):
+      simplernn_layer = SimpleRNN(units = number_of_simplernn_units,
+                                  activation = activation,
+                                  recurrent_initializer = recurrent_initializer,
+                                  input_shape = input_shape)
+      self.model.add(simplernn_layer)
 
    def addLongShortTermMemoryLayer(self,
                                    number_of_lstm_units,
