@@ -27,9 +27,9 @@ class DatasetManager:
    def inverseTransformData(self, data):
       return self.min_max_scaler.inverse_transform(data)
 
-   def printOriginalAndNormalizedDatasetColumn(self, dataset, dataset_column, normalized_column):
+   def printRealAndNormalizedDatasetColumn(self, dataset, dataset_column, normalized_column):
       for row in range(len(dataset.index)):
-         print("ORIGINAL = " + str(dataset[[dataset_column]].values[row]) + " --> NORMALIZED = " + str(normalized_column[row]))
+         print("Real = " + str(dataset[[dataset_column]].values[row]) + " --> Normalized = " + str(normalized_column[row]))
 
    def checkIfDatasetColumnHasNullValues(self, dataset, dataset_column):
       return len(dataset.index) != dataset[[dataset_column]].count()[0]

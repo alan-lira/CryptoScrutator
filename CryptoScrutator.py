@@ -1,3 +1,4 @@
+import csv
 import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # AVOID TENSORFLOW LOGGING
 import string
@@ -59,7 +60,7 @@ class CryptoScrutator:
       self.gru_predicted_prices = None
 
    def loadCryptoScrutatorSettings(self, crypto_scrutator_settings_file):
-      with open(crypto_scrutator_settings_file, 'r') as settings_file:
+      with open(crypto_scrutator_settings_file, mode = "r") as settings_file:
          for line in settings_file:
             line = line.strip()
             splitted_line = line.split(" = ")
@@ -78,7 +79,7 @@ class CryptoScrutator:
                   self.plot_all_rnn_models_comparison_graph_boolean = value == "True"
 
    def loadDatasetSettings(self, dataset_settings_file):
-      with open(dataset_settings_file, 'r') as settings_file:
+      with open(dataset_settings_file, mode = "r") as settings_file:
          for line in settings_file:
             line = line.strip()
             splitted_line = line.split(" = ")
@@ -95,7 +96,7 @@ class CryptoScrutator:
                   self.chosen_column = str(value)
 
    def loadRNNModelHyperparametersSettings(self, rnn_model_hyperparameters_settings_file):
-      with open(rnn_model_hyperparameters_settings_file, 'r') as settings_file:
+      with open(rnn_model_hyperparameters_settings_file, mode = "r") as settings_file:
          for line in settings_file:
             line = line.strip()
             splitted_line = line.split(" = ")
@@ -166,10 +167,29 @@ class CryptoScrutator:
    def sortCryptocoinDatasetByColumn(self):
       self.cryptocoin_dataset = self.datasetManager.sortDatasetByColumn(self.cryptocoin_dataset, self.sorting_column)
 
-   def handleChosenColumnNullData(self):
-      #print("'" + self.chosen_column + "' Column has null values: " + str(self.datasetManager.checkIfDatasetColumnHasNullValues(self.cryptocoin_dataset, self.chosen_column)))
-      #print("'" + self.chosen_column + "' Column null values' count: " + str(self.datasetManager.datasetColumnNullValuesCount(self.cryptocoin_dataset, self.chosen_column)))
-      pass
+   def _setDatasetFile(self, dataset_file):
+      self.dataset_file = dataset_file
+
+   def handleChosenAndSortingColumnsNullData(self):
+      chosen_column_has_null_data = self.datasetManager.checkIfDatasetColumnHasNullValues(self.cryptocoin_dataset, self.chosen_column)
+      sorting_column_has_null_data = self.datasetManager.checkIfDatasetColumnHasNullValues(self.cryptocoin_dataset, self.sorting_column)
+      if chosen_column_has_null_data or sorting_column_has_null_data:
+         dataset_file_path = "datasets/"
+         dataset_file_extension = ".csv"
+         dataset_file_name = self.dataset_file.split(dataset_file_path)[1].split(dataset_file_extension)[0]
+         dataset_new_file_name = dataset_file_path + dataset_file_name + "_handled" + dataset_file_extension
+         with open(dataset_new_file_name, mode = "w") as handled:
+            csvWriter = csv.writer(handled, delimiter = ",")
+            with open(self.dataset_file, mode = "r") as to_handle:
+               csvReader = csv.reader(to_handle)
+               dataset_file_header = next(csvReader)
+               csvWriter.writerow(dataset_file_header)
+               chosen_column_index = dataset_file_header.index(self.chosen_column)
+               sorting_column_index = dataset_file_header.index(self.sorting_column)
+               for dataset_file_row in csvReader:
+                  if dataset_file_row[chosen_column_index] != "" and dataset_file_row[sorting_column_index] != "":
+                     csvWriter.writerow(dataset_file_row)
+         self._setDatasetFile(dataset_new_file_name)
 
    def normalizeChosenColumnData(self):
       self.normalized_chosen_column_data = self.datasetManager.normalizeDatasetValuesOfColumn(self.cryptocoin_dataset, self.chosen_column)
@@ -377,7 +397,8 @@ cryptoScrutator.loadDatasetSettings("settings/dataset_settings") ## LOAD DATASET
 cryptoScrutator.loadRNNModelHyperparametersSettings("settings/rnn_model_hyperparameters") ## LOAD RNN MODEL HYPERPARAMETERS SETTINGS
 cryptoScrutator.loadCryptocoinDatasetCSV() ## LOAD CRYPTOCOIN DATASET
 cryptoScrutator.sortCryptocoinDatasetByColumn() ## SORT CRYPTOCOIN DATASET BY 'Date' COLUMN (ASCENDING MODE)
-cryptoScrutator.handleChosenColumnNullData() ## HANDLE CHOSEN COLUMN's ('Close') NULL DATA
+cryptoScrutator.handleChosenAndSortingColumnsNullData() ## HANDLE CHOSEN ('Close') AND SORTING ('Date') COLUMN's NULL DATA
+"""
 cryptoScrutator.normalizeChosenColumnData() ## NORMALIZE CRYPTOCOIN DATASET's 'Close' COLUMN (CLOSE PRICE)
 cryptoScrutator.splitNormalizedChosenColumnDataBetweenTrainningAndTestingChunks() ## SPLIT NORMALIZED CHOSEN COLUMN's DATA BETWEEN TRAINNING AND TESTING CHUNKS
 cryptoScrutator.splitNormalizedTrainningDataChunkBetweenLearningAndPredictionChunks() ## SPLIT NORMALIZED TRAINNING DATA's CHUNK BETWEEN LEARNING AND PREDICTION CHUNKS
@@ -395,3 +416,4 @@ cryptoScrutator.setRNNModelType("GRU") ## EXECUTE GRU LAYER BASED MODEL
 cryptoScrutator.executeRNNModel()
 
 cryptoScrutator.plotAllRNNModelsComparisonGraph() ## PLOT ALL RNN MODELS COMPARISON GRAPH
+"""
