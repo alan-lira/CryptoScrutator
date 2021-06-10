@@ -69,3 +69,4 @@ class DatasetManager:
       print("Coefficient of Determination (R²): " + str(r2_score(real_values, predicted_values)))
       print("Mean Poisson Deviance: " + str(mean_tweedie_deviance(real_values, predicted_values, power = 1)))
       print("Mean Gamma Deviance: " + str(mean_tweedie_deviance(real_values, predicted_values, power = 2)))
+      print("\n")

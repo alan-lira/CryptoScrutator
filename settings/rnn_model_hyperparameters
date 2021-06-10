@@ -1,4 +1,4 @@
-model_name = Crypto_Predictor
+model_name = CryptoScrutator
 trainning_data_percent = 0.8
 learning_size = 5
 prediction_size = 0

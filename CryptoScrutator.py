@@ -59,7 +59,7 @@ class CryptoScrutator:
 
    def executeSimpleRNNModel(self):
       ## CREATE SIMPLERNN LAYER BASED MODEL
-      self.recurrentNeuralNetworkManager.createEmptySequentialModel(self.model_name)
+      self.recurrentNeuralNetworkManager.createEmptySequentialModel(self.model_name+"_SimpleRNN")
 
       ## ADD SIMPLERNN LAYER
       self.recurrentNeuralNetworkManager.addSimpleRecurrentNeuralNetworkLayer(self.number_of_simplernn_units,
@@ -166,7 +166,7 @@ class CryptoScrutator:
 
    def executeLSTMModel(self):
       ## CREATE LSTM LAYER BASED MODEL
-      self.recurrentNeuralNetworkManager.createEmptySequentialModel(self.model_name)
+      self.recurrentNeuralNetworkManager.createEmptySequentialModel(self.model_name+"_LSTM")
 
       ## ADD LSTM LAYER
       self.recurrentNeuralNetworkManager.addLongShortTermMemoryLayer(self.number_of_lstm_units,
@@ -273,7 +273,7 @@ class CryptoScrutator:
 
    def executeGRUModel(self):
       ## CREATE GRU LAYER BASED MODEL
-      self.recurrentNeuralNetworkManager.createEmptySequentialModel(self.model_name)
+      self.recurrentNeuralNetworkManager.createEmptySequentialModel(self.model_name+"_GRU")
 
       ## ADD GRU LAYER
       self.recurrentNeuralNetworkManager.addGatedRecurrentUnitLayer(self.number_of_gru_units,
@@ -421,8 +421,9 @@ class CryptoScrutator:
       self.cryptocoin_dataset = self.datasetManager.sortDatasetByColumn(self.cryptocoin_dataset, self.sorting_column)
 
    def handleChosenColumnNullData(self):
-      print("'" + self.chosen_column + "' Column has null values: " + str(self.datasetManager.checkIfDatasetColumnHasNullValues(self.cryptocoin_dataset, self.chosen_column)))
-      print("'" + self.chosen_column + "' Column null values' count: " + str(self.datasetManager.datasetColumnNullValuesCount(self.cryptocoin_dataset, self.chosen_column)))
+      #print("'" + self.chosen_column + "' Column has null values: " + str(self.datasetManager.checkIfDatasetColumnHasNullValues(self.cryptocoin_dataset, self.chosen_column)))
+      #print("'" + self.chosen_column + "' Column null values' count: " + str(self.datasetManager.datasetColumnNullValuesCount(self.cryptocoin_dataset, self.chosen_column)))
+      pass
 
    def normalizeChosenColumnData(self):
       self.normalized_chosen_column_data = self.datasetManager.normalizeDatasetValuesOfColumn(self.cryptocoin_dataset, self.chosen_column)
