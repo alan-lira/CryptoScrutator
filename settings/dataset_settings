@@ -1,0 +1,4 @@
+cryptocoin_name = Bitcoin
+dataset_file = datasets/bitcoin_test_sample.csv
+sorting_column = Date
+chosen_column = Close

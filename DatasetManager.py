@@ -50,12 +50,12 @@ class DatasetManager:
       normalized_test_data_chunk = numpy.reshape(normalized_test_data_chunk, (testing_chunk_size, 1))
       return normalized_train_data_chunk, normalized_test_data_chunk
 
-   def splitNormalizedPastAndFutureDataChunks(self, normalized_column_chunk, start_index, end_index, past_size, future_size):
+   def splitNormalizedPastAndFutureDataChunks(self, normalized_column_chunk, start_index, end_index, learning_size, prediction_size):
       normalized_past_data_chunk = []
       normalized_future_data_chunk = []
-      for index in range(start_index + past_size, end_index):
-         normalized_past_data_chunk.append(numpy.reshape(normalized_column_chunk[range(index - past_size, index)], (past_size, 1)))
-         normalized_future_data_chunk.append(normalized_column_chunk[index + future_size])
+      for index in range(start_index + learning_size, end_index):
+         normalized_past_data_chunk.append(numpy.reshape(normalized_column_chunk[range(index - learning_size, index)], (learning_size, 1)))
+         normalized_future_data_chunk.append(normalized_column_chunk[index + prediction_size])
       return numpy.array(normalized_past_data_chunk), numpy.array(normalized_future_data_chunk)
 
    def printRegressionMetrics(self, real_values, predicted_values):
