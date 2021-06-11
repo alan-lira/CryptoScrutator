@@ -13,7 +13,7 @@ class CryptoScrutator:
       self.graphPlotter = GraphPlotter()
       self.recurrentNeuralNetworkManager = RecurrentNeuralNetworkManager()
       self.print_metrics_history_boolean = None
-      self.plot_loss_graph_boolean = None
+      self.plot_metrics_graphs_boolean = None
       self.plot_real_price_vs_predicted_price_graph_boolean = None
       self.print_regression_metrics_boolean = None
       self.plot_all_rnn_models_comparison_graph_boolean = None
@@ -69,8 +69,8 @@ class CryptoScrutator:
             if len(splitted_line) > 1:
                if key == "print_metrics_history_boolean":
                   self.print_metrics_history_boolean = value == "True"
-               elif key == "plot_loss_graph_boolean":
-                  self.plot_loss_graph_boolean = value == "True"
+               elif key == "plot_metrics_graphs_boolean":
+                  self.plot_metrics_graphs_boolean = value == "True"
                elif key == "plot_real_price_vs_predicted_price_graph_boolean":
                   self.plot_real_price_vs_predicted_price_graph_boolean = value == "True"
                elif key == "print_regression_metrics_boolean":
@@ -272,29 +272,35 @@ class CryptoScrutator:
          ## PRINT TRAINNED MODEL METRICS HISTORY
          self.recurrentNeuralNetworkManager.printTrainnedModelMetricsHistory()
 
-      if self.plot_loss_graph_boolean == True:
-         ## PLOT GRAPH: (X = 'Number of Epochs', Y = 'Training Loss' Vs 'Validation Loss')
+      if self.plot_metrics_graphs_boolean == True:
+         ## PLOT GRAPH: (X = 'Number of Epochs', Y = 'Training Metric' Vs 'Validation Metric')
          trainned_model_metrics_history = self.recurrentNeuralNetworkManager.getTrainnedModelMetricsHistory()
-         graph_title = "Training and Validation Loss ("+self.rnn_model_type+")"
-         y_label = "Loss"
-         first_curve_label = "Training Loss"
-         first_curve_color = "blue"
-         first_curve_data = trainned_model_metrics_history["loss"]
-         second_curve_label = "Validation Loss"
-         second_curve_color = "orange"
-         second_curve_data = trainned_model_metrics_history["val_loss"]
-         x_label = "Number of Epochs"
-         x_ticks_size = self.number_of_epochs
-         self.graphPlotter.plotTwoCurvesGraph(graph_title,
-                                              y_label,
-                                              first_curve_label,
-                                              first_curve_color,
-                                              first_curve_data,
-                                              second_curve_label,
-                                              second_curve_color,
-                                              second_curve_data,
-                                              x_label,
-                                              x_ticks_size)
+         metrics_to_plot = ["loss"]
+         metrics_to_plot.extend(self.metrics_list)
+         for metric in metrics_to_plot:
+            metric_name = metric.replace("_", " ").title()
+            training_metric = trainned_model_metrics_history[metric]
+            validation_metric = trainned_model_metrics_history["val_"+metric]
+            graph_title = metric_name + " Graph (" + self.rnn_model_type + ")"
+            y_label = metric_name
+            first_curve_label = "Training " + metric_name
+            first_curve_color = "red"
+            first_curve_data = training_metric
+            second_curve_label = "Validation " + metric_name
+            second_curve_color = "green"
+            second_curve_data = validation_metric
+            x_label = "Number of Epochs"
+            x_ticks_size = self.number_of_epochs
+            self.graphPlotter.plotTwoCurvesGraph(graph_title,
+                                                 y_label,
+                                                 first_curve_label,
+                                                 first_curve_color,
+                                                 first_curve_data,
+                                                 second_curve_label,
+                                                 second_curve_color,
+                                                 second_curve_data,
+                                                 x_label,
+                                                 x_ticks_size)
 
       ## PREDICT WITH TRAINNED MODEL
       self.recurrentNeuralNetworkManager.predictWithTrainnedModel(self.normalized_testing_data_to_predict_chunk)
@@ -398,7 +404,6 @@ cryptoScrutator.loadRNNModelHyperparametersSettings("settings/rnn_model_hyperpar
 cryptoScrutator.loadCryptocoinDatasetCSV() ## LOAD CRYPTOCOIN DATASET
 cryptoScrutator.sortCryptocoinDatasetByColumn() ## SORT CRYPTOCOIN DATASET BY 'Date' COLUMN (ASCENDING MODE)
 cryptoScrutator.handleChosenAndSortingColumnsNullData() ## HANDLE CHOSEN ('Close') AND SORTING ('Date') COLUMN's NULL DATA
-"""
 cryptoScrutator.normalizeChosenColumnData() ## NORMALIZE CRYPTOCOIN DATASET's 'Close' COLUMN (CLOSE PRICE)
 cryptoScrutator.splitNormalizedChosenColumnDataBetweenTrainningAndTestingChunks() ## SPLIT NORMALIZED CHOSEN COLUMN's DATA BETWEEN TRAINNING AND TESTING CHUNKS
 cryptoScrutator.splitNormalizedTrainningDataChunkBetweenLearningAndPredictionChunks() ## SPLIT NORMALIZED TRAINNING DATA's CHUNK BETWEEN LEARNING AND PREDICTION CHUNKS
@@ -416,4 +421,3 @@ cryptoScrutator.setRNNModelType("GRU") ## EXECUTE GRU LAYER BASED MODEL
 cryptoScrutator.executeRNNModel()
 
 cryptoScrutator.plotAllRNNModelsComparisonGraph() ## PLOT ALL RNN MODELS COMPARISON GRAPH
-"""
