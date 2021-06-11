@@ -5,6 +5,7 @@ import string
 from DatasetManager import *
 from GraphPlotter import *
 from RecurrentNeuralNetworkManager import *
+from sklearn.preprocessing import MinMaxScaler
 
 class CryptoScrutator:
 
@@ -12,9 +13,10 @@ class CryptoScrutator:
       self.datasetManager = DatasetManager()
       self.graphPlotter = GraphPlotter()
       self.recurrentNeuralNetworkManager = RecurrentNeuralNetworkManager()
+      self.min_max_scaler = MinMaxScaler()
       self.print_metrics_history_boolean = None
       self.plot_metrics_graphs_boolean = None
-      self.plot_real_price_vs_predicted_price_graph_boolean = None
+      self.plot_real_values_vs_predicted_values_graph_boolean = None
       self.print_regression_metrics_boolean = None
       self.plot_all_rnn_models_comparison_graph_boolean = None
       self.cryptocoin_name = None
@@ -22,6 +24,7 @@ class CryptoScrutator:
       self.sorting_column = None
       self.chosen_column = None
       self.cryptocoin_dataset = None
+      self.chosen_column_data_real_values_to_compare_chunk = None
       self.normalized_chosen_column_data = None
       self.trainning_data_percent = None
       self.normalized_trainning_data_chunk = None
@@ -29,8 +32,6 @@ class CryptoScrutator:
       self.normalized_trainning_data_prediction_chunk = None
       self.normalized_testing_data_chunk = None
       self.normalized_testing_data_to_predict_chunk = None
-      self.normalized_testing_data_real_values_chunk = None
-      self.testing_data_real_values_chunk = None
       self.learning_size = None
       self.prediction_size = None
       self.model_name = None
@@ -56,9 +57,9 @@ class CryptoScrutator:
       self.shuffle_boolean = None
       self.rnn_model_type = None
       self.prediction_history = None
-      self.simplernn_predicted_prices = None
-      self.lstm_predicted_prices = None
-      self.gru_predicted_prices = None
+      self.simplernn_predicted_values = None
+      self.lstm_predicted_values = None
+      self.gru_predicted_values = None
 
    def loadCryptoScrutatorSettings(self, crypto_scrutator_settings_file):
       with open(crypto_scrutator_settings_file, mode = "r") as settings_file:
@@ -72,8 +73,8 @@ class CryptoScrutator:
                   self.print_metrics_history_boolean = value == "True"
                elif key == "plot_metrics_graphs_boolean":
                   self.plot_metrics_graphs_boolean = value == "True"
-               elif key == "plot_real_price_vs_predicted_price_graph_boolean":
-                  self.plot_real_price_vs_predicted_price_graph_boolean = value == "True"
+               elif key == "plot_real_values_vs_predicted_values_graph_boolean":
+                  self.plot_real_values_vs_predicted_values_graph_boolean = value == "True"
                elif key == "print_regression_metrics_boolean":
                   self.print_regression_metrics_boolean = value == "True"
                elif key == "plot_all_rnn_models_comparison_graph_boolean":
@@ -271,7 +272,7 @@ class CryptoScrutator:
    def loadCryptocoinDatasetCSV(self):
       self.cryptocoin_dataset = self.datasetManager.loadDataset(self.dataset_file)
 
-   def sortCryptocoinDatasetByColumn(self):
+   def sortCryptocoinDatasetBySortingColumn(self):
       self.cryptocoin_dataset = self.datasetManager.sortDatasetByColumn(self.cryptocoin_dataset, self.sorting_column)
 
    def _verifyDatasetFileColumnHasNullData(self, column_to_verify):
@@ -347,23 +348,32 @@ class CryptoScrutator:
          raise SystemExit
 
    def normalizeChosenColumnData(self):
-      self.normalized_chosen_column_data = self.datasetManager.normalizeDatasetValuesOfColumn(self.cryptocoin_dataset, self.chosen_column)
+      values_to_normalize = self.cryptocoin_dataset[[self.chosen_column]].values
+      self.normalized_chosen_column_data = self.min_max_scaler.fit_transform(values_to_normalize)
 
    def splitNormalizedChosenColumnDataBetweenTrainningAndTestingChunks(self):
-      self.normalized_trainning_data_chunk, self.normalized_testing_data_chunk = self.datasetManager.splitNormalizedTrainAndTestDataChunks(self.normalized_chosen_column_data, self.trainning_data_percent)
+      self.normalized_trainning_data_chunk, self.normalized_testing_data_chunk = self.datasetManager.getNormalizedTrainAndTestDataChunks(self.normalized_chosen_column_data, self.trainning_data_percent)
 
-   def splitNormalizedTrainningDataChunkBetweenLearningAndPredictionChunks(self):
+   def splitNormalizedTrainningChunkBetweenLearningAndPredictionChunks(self):
       train_start_index = 0
       train_end_index = len(self.normalized_trainning_data_chunk)
-      self.normalized_trainning_data_learning_chunk, self.normalized_trainning_data_prediction_chunk = self.datasetManager.splitNormalizedPastAndFutureDataChunks(self.normalized_trainning_data_chunk, train_start_index, train_end_index, self.learning_size, self.prediction_size)
+      self.normalized_trainning_data_learning_chunk, self.normalized_trainning_data_prediction_chunk = self.datasetManager.getLearningAndPredictionChunksFromNormalizedTrainningChunk(self.normalized_trainning_data_chunk, train_start_index, train_end_index, self.learning_size, self.prediction_size)
 
-   def splitNormalizedTestingDataChunkBetweenToPredictAndRealValuesChunks(self):
+   def setNormalizedTestingDataToPredictChunk(self):
       test_start_index = 0
       test_end_index = len(self.normalized_testing_data_chunk)
-      self.normalized_testing_data_to_predict_chunk, self.normalized_testing_data_real_values_chunk = self.datasetManager.splitNormalizedPastAndFutureDataChunks(self.normalized_testing_data_chunk, test_start_index, test_end_index, self.learning_size, self.prediction_size)
+      self.normalized_testing_data_to_predict_chunk = self.datasetManager.getToPredictChunkFromNormalizedTestingChunk(self.normalized_testing_data_chunk, test_start_index, test_end_index, self.learning_size)
 
-   def revertNormalizingStepForNormalizedTestingDataRealValuesChunk(self):
-      self.testing_data_real_values_chunk = self.datasetManager.inverseTransformData(self.normalized_testing_data_real_values_chunk)
+   def setChosenColumnDataRealValuesToCompareChunk(self):
+      chosen_column_data = self.cryptocoin_dataset[[self.chosen_column]].values
+      trainning_chunk_size = int(len(chosen_column_data) * self.trainning_data_percent)
+      testing_chunk_size = len(chosen_column_data) - trainning_chunk_size
+      start_index = trainning_chunk_size
+      end_index = start_index + testing_chunk_size
+      self.chosen_column_data_real_values_to_compare_chunk = self.datasetManager.getRealValuesToCompareChunk(chosen_column_data, start_index, end_index, self.learning_size, self.prediction_size)
+
+   def denormalizeValues(self, normalized_values):
+      return self.min_max_scaler.inverse_transform(normalized_values)
 
    def setRNNModelType(self, rnn_model_type):
       self.rnn_model_type = rnn_model_type
@@ -465,39 +475,39 @@ class CryptoScrutator:
       self.recurrentNeuralNetworkManager.predictWithTrainnedModel(self.normalized_testing_data_to_predict_chunk)
       self.prediction_history = self.recurrentNeuralNetworkManager.getPredictionHistory()
 
-   def _reverseNormalizingDataStep(self):
-      ## REVERT NORMALIZING DATA STEP (INVERSE TRANSFORM)
-      predicted_prices = self.datasetManager.inverseTransformData(self.prediction_history)
+   def _denormalizePredictedValues(self):
+      ## DENORMALIZE PREDICTED VALUES
+      denormalized_predicted_values = self.denormalizeValues(self.prediction_history)
       if self.rnn_model_type == "SimpleRNN":
-         self.simplernn_predicted_prices = predicted_prices
+         self.simplernn_predicted_values = denormalized_predicted_values
       elif self.rnn_model_type == "LSTM":
-         self.lstm_predicted_prices = predicted_prices
+         self.lstm_predicted_values = denormalized_predicted_values
       elif self.rnn_model_type == "GRU":
-         self.gru_predicted_prices = predicted_prices
+         self.gru_predicted_values = denormalized_predicted_values
 
-   def _plotRealPricePredictedPriceGraphComparison(self):
-      ## PLOT REAL PRICE VS PREDICTED PRICE GRAPH
-      if self.plot_real_price_vs_predicted_price_graph_boolean == True:
-         ## PLOT GRAPH: (X = 'Days', Y = 'Real Price' Vs 'Predicted Price')
-         graph_title = self.cryptocoin_name + " Price Predictor"
-         y_label = self.chosen_column + " Price (USD)"
-         first_curve_label = "Real Price"
+   def _plotRealValuesPredictedValuesGraphComparison(self):
+      ## PLOT REAL VALUES VS PREDICTED VALUES GRAPH
+      if self.plot_real_values_vs_predicted_values_graph_boolean == True:
+         ## PLOT GRAPH: (X = 'Days', Y = 'Real Value' Vs 'Predicted Value')
+         graph_title = self.cryptocoin_name + " Predictor"
+         y_label = self.chosen_column
+         first_curve_label = "Real Value"
          first_curve_color = "blue"
-         first_curve_data = self.testing_data_real_values_chunk
-         second_curve_label = "Predicted Price ("+self.rnn_model_type+")"
+         first_curve_data = self.chosen_column_data_real_values_to_compare_chunk
+         second_curve_label = "Predicted Value ("+self.rnn_model_type+")"
          second_curve_color = None
          second_curve_data = None
          if self.rnn_model_type == "SimpleRNN":
             second_curve_color = "red"
-            second_curve_data = self.simplernn_predicted_prices
+            second_curve_data = self.simplernn_predicted_values
          elif self.rnn_model_type == "LSTM":
             second_curve_color = "orange"
-            second_curve_data = self.lstm_predicted_prices
+            second_curve_data = self.lstm_predicted_values
          elif self.rnn_model_type == "GRU":
             second_curve_color = "green"
-            second_curve_data = self.gru_predicted_prices      
+            second_curve_data = self.gru_predicted_values
          x_label = "Days"
-         x_ticks_size = len(self.testing_data_real_values_chunk)
+         x_ticks_size = len(self.chosen_column_data_real_values_to_compare_chunk)
          self.graphPlotter.plotTwoCurvesGraph(graph_title,
                                               y_label,
                                               first_curve_label,
@@ -513,15 +523,15 @@ class CryptoScrutator:
       ## CLEAR RNN MODEL
       self.recurrentNeuralNetworkManager.clearModel()
 
-   def _printRealPricePredictedPriceRegressionMetrics(self):
+   def _printRealValuesPredictedValuesRegressionMetrics(self):
       if self.print_regression_metrics_boolean == True:
          ## PRINT REGRESSION METRICS
          if self.rnn_model_type == "SimpleRNN":
-            self.datasetManager.printRegressionMetrics(self.testing_data_real_values_chunk, self.simplernn_predicted_prices)
+            self.datasetManager.printRegressionMetrics(self.chosen_column_data_real_values_to_compare_chunk, self.simplernn_predicted_values)
          elif self.rnn_model_type == "LSTM":
-            self.datasetManager.printRegressionMetrics(self.testing_data_real_values_chunk, self.lstm_predicted_prices)
+            self.datasetManager.printRegressionMetrics(self.chosen_column_data_real_values_to_compare_chunk, self.lstm_predicted_values)
          elif self.rnn_model_type == "GRU":
-            self.datasetManager.printRegressionMetrics(self.testing_data_real_values_chunk, self.gru_predicted_prices)
+            self.datasetManager.printRegressionMetrics(self.chosen_column_data_real_values_to_compare_chunk, self.gru_predicted_values)
 
    def executeRNNModel(self):
       self._createRNNModel()
@@ -529,30 +539,30 @@ class CryptoScrutator:
       self._printTrainnedRNNModelMetricsHistory()
       self._plotTrainnedRNNModelMetricsGraphs()
       self._predictWithTrainnedModel()
-      self._reverseNormalizingDataStep()
-      self._plotRealPricePredictedPriceGraphComparison()
-      self._printRealPricePredictedPriceRegressionMetrics()
+      self._denormalizePredictedValues()
+      self._plotRealValuesPredictedValuesGraphComparison()
+      self._printRealValuesPredictedValuesRegressionMetrics()
 
    def plotAllRNNModelsComparisonGraph(self):
       if self.plot_all_rnn_models_comparison_graph_boolean == True:
-         if any(self.testing_data_real_values_chunk) and any(self.simplernn_predicted_prices) and any(self.lstm_predicted_prices) and any(self.gru_predicted_prices):
-            ## PLOT GRAPH: (X = 'Days', Y = 'Real Price' Vs 'Predicted Price (SimpleRNN)' Vs 'Predicted Price (LSTM)' Vs 'Predicted Price (GRU)')
-            graph_title = self.cryptocoin_name + " Price Predictor"
-            y_label = self.chosen_column + " Price (USD)"
-            first_curve_label = "Real Price"
+         if any(self.chosen_column_data_real_values_to_compare_chunk) and any(self.simplernn_predicted_values) and any(self.lstm_predicted_values) and any(self.gru_predicted_values):
+            ## PLOT GRAPH: (X = 'Days', Y = 'Real Values' Vs 'Predicted Values (SimpleRNN)' Vs 'Predicted Values (LSTM)' Vs 'Predicted Values (GRU)')
+            graph_title = self.cryptocoin_name + " Predictor"
+            y_label = self.chosen_column
+            first_curve_label = "Real Value"
             first_curve_color = "blue"
-            first_curve_data = self.testing_data_real_values_chunk
-            second_curve_label = "Predicted Price (SimpleRNN)"
+            first_curve_data = self.chosen_column_data_real_values_to_compare_chunk
+            second_curve_label = "Predicted Value (SimpleRNN)"
             second_curve_color = "red"
-            second_curve_data = self.simplernn_predicted_prices
-            third_curve_label = "Predicted Price (LSTM)"
+            second_curve_data = self.simplernn_predicted_values
+            third_curve_label = "Predicted Value (LSTM)"
             third_curve_color = "orange"
-            third_curve_data = self.lstm_predicted_prices
-            fourth_curve_label = "Predicted Price (GRU)"
+            third_curve_data = self.lstm_predicted_values
+            fourth_curve_label = "Predicted Value (GRU)"
             fourth_curve_color = "green"
-            fourth_curve_data = self.gru_predicted_prices
+            fourth_curve_data = self.gru_predicted_values
             x_label = "Days"
-            x_ticks_size = len(self.testing_data_real_values_chunk)
+            x_ticks_size = len(self.chosen_column_data_real_values_to_compare_chunk)
             self.graphPlotter.plotFourCurvesGraph(graph_title,
                                                   y_label,
                                                   first_curve_label,
@@ -572,23 +582,26 @@ class CryptoScrutator:
 
 def main():
    cryptoScrutator = CryptoScrutator()
-   cryptoScrutator.loadCryptoScrutatorSettings("settings/crypto_scrutator_settings") ## LOAD CRYPTO SCRUTATOR SETTINGS
-   cryptoScrutator.loadDatasetSettings("settings/dataset_settings") ## LOAD DATASET SETTINGS
-   cryptoScrutator.loadRNNModelHyperparametersSettings("settings/rnn_model_hyperparameters") ## LOAD RNN MODEL HYPERPARAMETERS SETTINGS
-   cryptoScrutator.handleDatasetFileChosenAndSortingColumnsNullData() ## HANDLE 'chosen_column' AND 'sorting_column's NULL DATA
-   cryptoScrutator.verifyDatasetFileHasEnoughDataToBePartitioned() ## VERIFY IF CRYPTOCOIN's DATASET HAS ENOUGH DATA TO BE PARTITIONED
-   cryptoScrutator.loadCryptocoinDatasetCSV() ## LOAD CRYPTOCOIN's DATASET
-   cryptoScrutator.sortCryptocoinDatasetByColumn() ## SORT CRYPTOCOIN DATASET BY 'sorting_column' (ASCENDING MODE)
-   cryptoScrutator.normalizeChosenColumnData() ## NORMALIZE CRYPTOCOIN DATASET's 'chosen_column'
-   cryptoScrutator.splitNormalizedChosenColumnDataBetweenTrainningAndTestingChunks() ## SPLIT NORMALIZED CHOSEN COLUMN's DATA BETWEEN TRAINNING AND TESTING CHUNKS
-   cryptoScrutator.splitNormalizedTrainningDataChunkBetweenLearningAndPredictionChunks() ## SPLIT NORMALIZED TRAINNING DATA's CHUNK BETWEEN LEARNING AND PREDICTION CHUNKS
-   cryptoScrutator.splitNormalizedTestingDataChunkBetweenToPredictAndRealValuesChunks() ## SPLIT NORMALIZED TESTING DATA's CHUNK BETWEEN TO PREDICT AND REAL VALUES CHUNKS
-   cryptoScrutator.revertNormalizingStepForNormalizedTestingDataRealValuesChunk() ## REVERT NORMALIZING STEP FOR NORMALIZED TESTING DATA's REAL VALUES CHUNK (INVERSE TRANSFORM)
-   cryptoScrutator.setRNNModelType("SimpleRNN") ## EXECUTE SIMPLERNN LAYER BASED MODEL
+   cryptoScrutator.loadCryptoScrutatorSettings("settings/crypto_scrutator_settings") ## LOAD «crypto_scrutator_settings»
+   cryptoScrutator.loadDatasetSettings("settings/dataset_settings") ## LOAD «dataset_settings»
+   cryptoScrutator.loadRNNModelHyperparametersSettings("settings/rnn_model_hyperparameters") ## LOAD «rnn_model_hyperparameters»
+   cryptoScrutator.handleDatasetFileChosenAndSortingColumnsNullData() ## HANDLE «dataset_file»'s «chosen_column» AND «sorting_column» NULL DATA
+   cryptoScrutator.verifyDatasetFileHasEnoughDataToBePartitioned() ## VERIFY IF «dataset_file» HAS ENOUGH DATA TO BE PARTITIONED
+   cryptoScrutator.loadCryptocoinDatasetCSV() ## LOAD «dataset_file» AS «cryptocoin_dataset»
+   cryptoScrutator.sortCryptocoinDatasetBySortingColumn() ## SORT «cryptocoin_dataset» BY «sorting_column» (ASCENDING MODE)
+   cryptoScrutator.setChosenColumnDataRealValuesToCompareChunk() ## SET «chosen_column_data_real_values_to_compare_chunk» (FOR FUTURE COMPARISON AFTER MODEL PREDICTING PHASE)
+   cryptoScrutator.normalizeChosenColumnData() ## NORMALIZE «cryptocoin_dataset»'s «chosen_column»
+   cryptoScrutator.splitNormalizedChosenColumnDataBetweenTrainningAndTestingChunks() ## SPLIT «normalized_chosen_column_data» BETWEEN «normalized_trainning_data_chunk» AND «normalized_testing_data_chunk» CHUNKS
+   cryptoScrutator.splitNormalizedTrainningChunkBetweenLearningAndPredictionChunks() ## SPLIT «normalized_trainning_data_chunk» BETWEEN «normalized_trainning_data_learning_chunk» AND «normalized_trainning_data_prediction_chunk» CHUNKS
+   cryptoScrutator.setNormalizedTestingDataToPredictChunk() ## SET «normalized_testing_data_to_predict_chunk» FROM «normalized_testing_data_chunk»
+   ## EXECUTE «SimpleRNN» LAYER BASED RNN MODEL
+   cryptoScrutator.setRNNModelType("SimpleRNN")
    cryptoScrutator.executeRNNModel()
-   cryptoScrutator.setRNNModelType("LSTM") ## EXECUTE LSTM LAYER BASED MODEL
+   ## EXECUTE «LSTM» LAYER BASED RNN MODEL
+   cryptoScrutator.setRNNModelType("LSTM")
    cryptoScrutator.executeRNNModel()
-   cryptoScrutator.setRNNModelType("GRU") ## EXECUTE GRU LAYER BASED MODEL
+   ## EXECUTE «GRU» LAYER BASED RNN MODEL
+   cryptoScrutator.setRNNModelType("GRU")
    cryptoScrutator.executeRNNModel()
    cryptoScrutator.plotAllRNNModelsComparisonGraph() ## PLOT ALL RNN MODELS COMPARISON GRAPH
 

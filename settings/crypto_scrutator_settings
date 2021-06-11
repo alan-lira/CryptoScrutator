@@ -1,5 +1,5 @@
 print_metrics_history_boolean = True
 plot_metrics_graphs_boolean = True
-plot_real_price_vs_predicted_price_graph_boolean = True
+plot_real_values_vs_predicted_values_graph_boolean = True
 print_regression_metrics_boolean = True
 plot_all_rnn_models_comparison_graph_boolean = True

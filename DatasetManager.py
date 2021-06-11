@@ -1,12 +1,11 @@
 import pandas
 import numpy
 from sklearn.metrics import explained_variance_score, max_error, mean_absolute_error, mean_squared_error, mean_squared_log_error, mean_absolute_percentage_error, median_absolute_error, r2_score, mean_tweedie_deviance
-from sklearn.preprocessing import MinMaxScaler
 
 class DatasetManager:
 
    def __init__(self):
-      self.min_max_scaler = MinMaxScaler()
+      pass
 
    def loadDataset(self, csv_data_file_path):
       return pandas.read_csv(csv_data_file_path)
@@ -21,12 +20,6 @@ class DatasetManager:
       for row in range(len(dataset.index)):
          print(dataset[[dataset_column]].values[row])
 
-   def normalizeDatasetValuesOfColumn(self, dataset, dataset_column):
-      return self.min_max_scaler.fit_transform(dataset[[dataset_column]].values)
-
-   def inverseTransformData(self, data):
-      return self.min_max_scaler.inverse_transform(data)
-
    def printRealAndNormalizedDatasetColumn(self, dataset, dataset_column, normalized_column):
       for row in range(len(dataset.index)):
          print("Real = " + str(dataset[[dataset_column]].values[row]) + " --> Normalized = " + str(normalized_column[row]))
@@ -37,7 +30,7 @@ class DatasetManager:
    def datasetColumnNullValuesCount(self, dataset, dataset_column):
       return len(dataset.index) - dataset[[dataset_column]].count()[0]
 
-   def splitNormalizedTrainAndTestDataChunks(self, normalized_column, trainning_percent):
+   def getNormalizedTrainAndTestDataChunks(self, normalized_column, trainning_percent):
       normalized_train_data_chunk = []
       normalized_test_data_chunk = []
       trainning_chunk_size = int(len(normalized_column) * trainning_percent)
@@ -50,13 +43,25 @@ class DatasetManager:
       normalized_test_data_chunk = numpy.reshape(normalized_test_data_chunk, (testing_chunk_size, 1))
       return normalized_train_data_chunk, normalized_test_data_chunk
 
-   def splitNormalizedPastAndFutureDataChunks(self, normalized_column_chunk, start_index, end_index, learning_size, prediction_size):
-      normalized_past_data_chunk = []
-      normalized_future_data_chunk = []
+   def getLearningAndPredictionChunksFromNormalizedTrainningChunk(self, normalized_trainning_chunk, start_index, end_index, learning_size, prediction_size):
+      normalized_trainning_learning_chunk = []
+      normalized_trainning_prediction_chunk = []
       for index in range(start_index + learning_size, end_index):
-         normalized_past_data_chunk.append(numpy.reshape(normalized_column_chunk[range(index - learning_size, index)], (learning_size, 1)))
-         normalized_future_data_chunk.append(normalized_column_chunk[index + prediction_size])
-      return numpy.array(normalized_past_data_chunk), numpy.array(normalized_future_data_chunk)
+         normalized_trainning_learning_chunk.append(numpy.reshape(normalized_trainning_chunk[range(index - learning_size, index)], (learning_size, 1)))
+         normalized_trainning_prediction_chunk.append(normalized_trainning_chunk[index + prediction_size])
+      return numpy.array(normalized_trainning_learning_chunk), numpy.array(normalized_trainning_prediction_chunk)
+
+   def getToPredictChunkFromNormalizedTestingChunk(self, normalized_testing_chunk, start_index, end_index, learning_size):
+      normalized_testing_to_predict_chunk = []
+      for index in range(start_index + learning_size, end_index):
+         normalized_testing_to_predict_chunk.append(numpy.reshape(normalized_testing_chunk[range(index - learning_size, index)], (learning_size, 1)))
+      return numpy.array(normalized_testing_to_predict_chunk)
+
+   def getRealValuesToCompareChunk(self, chosen_column, start_index, end_index, learning_size, prediction_size):
+      real_values_to_compare_chunk = []
+      for index in range(start_index + learning_size, end_index):
+         real_values_to_compare_chunk.append(chosen_column[index + prediction_size])
+      return numpy.array(real_values_to_compare_chunk)
 
    def printRegressionMetrics(self, real_values, predicted_values):
       print("Explained Variance Regression Score: " + str(explained_variance_score(real_values, predicted_values)))
