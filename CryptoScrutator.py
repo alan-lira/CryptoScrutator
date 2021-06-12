@@ -499,24 +499,18 @@ class CryptoScrutator:
             validation_metric = trainned_model_metrics_history["val_"+metric]
             graph_title = metric_name + " Graph (" + self.rnn_model_type + ")"
             y_label = metric_name
-            first_curve_label = "Training " + metric_name
-            first_curve_color = "red"
-            first_curve_data = training_metric
-            second_curve_label = "Validation " + metric_name
-            second_curve_color = "green"
-            second_curve_data = validation_metric
             x_label = "Number of Epochs"
             x_ticks_size = self.number_of_epochs
-            self.graphPlotter.plotTwoCurvesGraph(graph_title,
-                                                 y_label,
-                                                 first_curve_label,
-                                                 first_curve_color,
-                                                 first_curve_data,
-                                                 second_curve_label,
-                                                 second_curve_color,
-                                                 second_curve_data,
-                                                 x_label,
-                                                 x_ticks_size)
+            curves_labels = ["Training " + metric_name, "Validation " + metric_name]
+            curves_colors = ["indianred", "olivedrab"]
+            curves_datas = [training_metric, validation_metric]
+            self.graphPlotter.plotCurvesGraph(graph_title,
+                                              y_label,
+                                              x_label,
+                                              x_ticks_size,
+                                              curves_labels,
+                                              curves_colors,
+                                              curves_datas)
 
    def _predictWithTrainnedModel(self):
       ## PREDICT WITH TRAINNED RNN MODEL
@@ -539,33 +533,30 @@ class CryptoScrutator:
          ## PLOT GRAPH: (X = 'Days', Y = 'Actual Value' Vs 'Predicted Value')
          graph_title = self.cryptocoin_name + " Predictor"
          y_label = self.chosen_column
-         first_curve_label = "Actual Value"
-         first_curve_color = "blue"
-         first_curve_data = self.chosen_column_data_actual_values_to_compare_chunk
-         second_curve_label = "Predicted Value ("+self.rnn_model_type+")"
-         second_curve_color = None
-         second_curve_data = None
-         if self.rnn_model_type == "SimpleRNN":
-            second_curve_color = "red"
-            second_curve_data = self.simplernn_predicted_values
-         elif self.rnn_model_type == "LSTM":
-            second_curve_color = "orange"
-            second_curve_data = self.lstm_predicted_values
-         elif self.rnn_model_type == "GRU":
-            second_curve_color = "green"
-            second_curve_data = self.gru_predicted_values
          x_label = "Days"
          x_ticks_size = len(self.chosen_column_data_actual_values_to_compare_chunk)
-         self.graphPlotter.plotTwoCurvesGraph(graph_title,
-                                              y_label,
-                                              first_curve_label,
-                                              first_curve_color,
-                                              first_curve_data,
-                                              second_curve_label,
-                                              second_curve_color,
-                                              second_curve_data,
-                                              x_label,
-                                              x_ticks_size)
+         curves_labels = ["Actual Value"]
+         curves_colors = ["gold"]
+         curves_datas = [self.chosen_column_data_actual_values_to_compare_chunk]
+         if self.rnn_model_type == "SimpleRNN":
+            curves_labels.append("Predicted Value ("+self.rnn_model_type+")")
+            curves_colors.append("firebrick")
+            curves_datas.append(self.simplernn_predicted_values)
+         elif self.rnn_model_type == "LSTM":
+            curves_labels.append("Predicted Value ("+self.rnn_model_type+")")
+            curves_colors.append("lightseagreen")
+            curves_datas.append(self.lstm_predicted_values)
+         elif self.rnn_model_type == "GRU":
+            curves_labels.append("Predicted Value ("+self.rnn_model_type+")")
+            curves_colors.append("darkslateblue")
+            curves_datas.append(self.gru_predicted_values)
+         self.graphPlotter.plotCurvesGraph(graph_title,
+                                           y_label,
+                                           x_label,
+                                           x_ticks_size,
+                                           curves_labels,
+                                           curves_colors,
+                                           curves_datas)
 
    def _clearRNNModel(self):
       ## CLEAR RNN MODEL
@@ -600,40 +591,38 @@ class CryptoScrutator:
          simplernn_predicted_values_valid = self.simplernn_predicted_values is not None and any(self.simplernn_predicted_values)
          lstm_predicted_values_valid = self.lstm_predicted_values is not None and any(self.lstm_predicted_values)
          gru_predicted_values_valid = self.gru_predicted_values is not None and any(self.gru_predicted_values)
-         if chosen_column_data_actual_values_to_compare_chunk_valid and simplernn_predicted_values_valid and lstm_predicted_values_valid and gru_predicted_values_valid:
-            ## PLOT GRAPH: (X = «Days», Y = «Actual Values» Vs «Predicted Values (SimpleRNN)» Vs «Predicted Values (LSTM)» Vs «Predicted Values (GRU)»)
+         if chosen_column_data_actual_values_to_compare_chunk_valid and (simplernn_predicted_values_valid or lstm_predicted_values_valid or gru_predicted_values_valid):
+            ## PLOT GRAPH: (X = «Days», Y = «Actual Values» Vs [«Predicted Values (SimpleRNN)» Vs «Predicted Values (LSTM)» Vs «Predicted Values (GRU)»])
             graph_title = self.cryptocoin_name + " Predictor"
             y_label = self.chosen_column
-            first_curve_label = "Actual Value"
-            first_curve_color = "blue"
-            first_curve_data = self.chosen_column_data_actual_values_to_compare_chunk
-            second_curve_label = "Predicted Value (SimpleRNN)"
-            second_curve_color = "red"
-            second_curve_data = self.simplernn_predicted_values
-            third_curve_label = "Predicted Value (LSTM)"
-            third_curve_color = "orange"
-            third_curve_data = self.lstm_predicted_values
-            fourth_curve_label = "Predicted Value (GRU)"
-            fourth_curve_color = "green"
-            fourth_curve_data = self.gru_predicted_values
             x_label = "Days"
             x_ticks_size = len(self.chosen_column_data_actual_values_to_compare_chunk)
-            self.graphPlotter.plotFourCurvesGraph(graph_title,
-                                                  y_label,
-                                                  first_curve_label,
-                                                  first_curve_color,
-                                                  first_curve_data,
-                                                  second_curve_label,
-                                                  second_curve_color,
-                                                  second_curve_data,
-                                                  third_curve_label,
-                                                  third_curve_color,
-                                                  third_curve_data,
-                                                  fourth_curve_label,
-                                                  fourth_curve_color,
-                                                  fourth_curve_data,
-                                                  x_label,
-                                                  x_ticks_size)
+            curves_labels = []
+            curves_colors = []
+            curves_datas = []
+            if chosen_column_data_actual_values_to_compare_chunk_valid:
+               curves_labels.append("Actual Value")
+               curves_colors.append("gold")
+               curves_datas.append(self.chosen_column_data_actual_values_to_compare_chunk)
+            if simplernn_predicted_values_valid:
+               curves_labels.append("Predicted Value (SimpleRNN)")
+               curves_colors.append("firebrick")
+               curves_datas.append(self.simplernn_predicted_values)
+            if lstm_predicted_values_valid:
+               curves_labels.append("Predicted Value (LSTM)")
+               curves_colors.append("lightseagreen")
+               curves_datas.append(self.lstm_predicted_values)
+            if gru_predicted_values_valid:
+               curves_labels.append("Predicted Value (GRU)")
+               curves_colors.append("darkslateblue")
+               curves_datas.append(self.gru_predicted_values)
+            self.graphPlotter.plotCurvesGraph(graph_title,
+                                              y_label,
+                                              x_label,
+                                              x_ticks_size,
+                                              curves_labels,
+                                              curves_colors,
+                                              curves_datas)
 
    def executeInvestmentSimulation(self):
       dataset_data_lines_count = self._getDatasetFileDataLinesCount()
@@ -679,6 +668,22 @@ class CryptoScrutator:
             gru_chosen_column_prediction_string = " | GRU_" + self.chosen_column + "_Prediction = " + str(self.gru_predicted_values[row])
          print(date_column_string + open_column_string + chosen_column_string + simplernn_chosen_column_prediction_string + lstm_chosen_column_prediction_string + gru_chosen_column_prediction_string)
 
+      usd_bars_labels = []
+      usd_bars_colors = []
+      usd_bars_heights = []
+      usd_graph_title = "NaiveInvestor Simulation"
+      usd_graph_subtitle = "Initial Balance: " + str(self.initial_balance_in_usd) + " USD + " + str(self.initial_balance_in_bitcoin) + " Bitcoin" + "\nSelling Bitcoin Strategy Percent: " + str(self.selling_bitcoin_strategy_percent) + " | Buying Bitcoin Strategy Percent: " + str(self.buying_bitcoin_strategy_percent)
+      usd_y_label = "USD Balance"
+      usd_x_label = "Predictor"
+
+      bitcoin_bars_labels = []
+      bitcoin_bars_colors = []
+      bitcoin_bars_heights = []
+      bitcoin_graph_title = "NaiveInvestor Simulation"
+      bitcoin_graph_subtitle = "Initial Balance: " + str(self.initial_balance_in_usd) + " USD + " + str(self.initial_balance_in_bitcoin) + " Bitcoin" + "\nSelling Bitcoin Strategy Percent: " + str(self.selling_bitcoin_strategy_percent) + " | Buying Bitcoin Strategy Percent: " + str(self.buying_bitcoin_strategy_percent)
+      bitcoin_y_label = "Bitcoin Balance"
+      bitcoin_x_label = "Predictor"
+
       if chosen_column_data_actual_values_to_compare_chunk_valid:
          ## SIMULATE INVESTIMENTS WITH ACTUAL VALUES (AS IF THEY WERE PERFECTLY PREDICTED, HYPOTHETICALLY)
          hypothetical_perfect_prediction_usd_balance = None
@@ -695,6 +700,12 @@ class CryptoScrutator:
          hypothetical_perfect_prediction_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
          print("«Hypothetical Perfect Prediction» Final Balance in USD: " + str(hypothetical_perfect_prediction_usd_balance))
          print("«Hypothetical Perfect Prediction» Final Balance in Bitcoin: " + str(hypothetical_perfect_prediction_bitcoin_balance))
+         usd_bars_labels.append("Hypothetical Perfect Prediction")
+         usd_bars_colors.append("gold")
+         usd_bars_heights.append(float(hypothetical_perfect_prediction_usd_balance))
+         bitcoin_bars_labels.append("Hypothetical Perfect Prediction")
+         bitcoin_bars_colors.append("gold")
+         bitcoin_bars_heights.append(float(hypothetical_perfect_prediction_bitcoin_balance))
 
       if simplernn_predicted_values_valid:
          ## SIMULATE INVESTIMENTS WITH «SimpleRNN» LAYER BASED RNN MODEL PREDICTED VALUES
@@ -712,6 +723,12 @@ class CryptoScrutator:
          simplernn_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
          print("«SimpleRNN» Final Balance in USD: " + str(simplernn_usd_balance))
          print("«SimpleRNN» Final Balance in Bitcoin: " + str(simplernn_bitcoin_balance))
+         usd_bars_labels.append("SimpleRNN")
+         usd_bars_colors.append("firebrick")
+         usd_bars_heights.append(float(simplernn_usd_balance))
+         bitcoin_bars_labels.append("SimpleRNN")
+         bitcoin_bars_colors.append("firebrick")
+         bitcoin_bars_heights.append(float(simplernn_bitcoin_balance))
 
       if lstm_predicted_values_valid:
          ## SIMULATE INVESTIMENTS WITH «LSTM» LAYER BASED RNN MODEL PREDICTED VALUES
@@ -729,6 +746,12 @@ class CryptoScrutator:
          lstm_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
          print("«LSTM» Final Balance in USD: " + str(lstm_usd_balance))
          print("«LSTM» Final Balance in Bitcoin: " + str(lstm_bitcoin_balance))
+         usd_bars_labels.append("LSTM")
+         usd_bars_colors.append("lightseagreen")
+         usd_bars_heights.append(float(lstm_usd_balance))
+         bitcoin_bars_labels.append("LSTM")
+         bitcoin_bars_colors.append("lightseagreen")
+         bitcoin_bars_heights.append(float(lstm_bitcoin_balance))
 
       if gru_predicted_values_valid:
          ## SIMULATE INVESTIMENTS WITH «GRU» LAYER BASED RNN MODEL PREDICTED VALUES
@@ -746,6 +769,34 @@ class CryptoScrutator:
          gru_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
          print("«GRU» Final Balance in USD: " + str(gru_usd_balance))
          print("«GRU» Final Balance in Bitcoin: " + str(gru_bitcoin_balance))
+         usd_bars_labels.append("GRU")
+         usd_bars_colors.append("darkslateblue")
+         usd_bars_heights.append(float(gru_usd_balance))
+         bitcoin_bars_labels.append("GRU")
+         bitcoin_bars_colors.append("darkslateblue")
+         bitcoin_bars_heights.append(float(gru_bitcoin_balance))
+
+      usd_greatest_order_of_magnitude = math.floor(math.log10(max(usd_bars_heights)))
+
+      self.graphPlotter.plotBarsGraph(usd_graph_title,
+                                      usd_graph_subtitle,
+                                      usd_y_label,
+                                      usd_x_label,
+                                      usd_bars_labels,
+                                      usd_bars_colors,
+                                      usd_bars_heights,
+                                      usd_greatest_order_of_magnitude)
+
+      bitcoin_greatest_order_of_magnitude = math.floor(math.log10(max(bitcoin_bars_heights)))
+
+      self.graphPlotter.plotBarsGraph(bitcoin_graph_title,
+                                      bitcoin_graph_subtitle,
+                                      bitcoin_y_label,
+                                      bitcoin_x_label,
+                                      bitcoin_bars_labels,
+                                      bitcoin_bars_colors,
+                                      bitcoin_bars_heights,
+                                      bitcoin_greatest_order_of_magnitude)
 
 def main():
    cryptoScrutator = CryptoScrutator()

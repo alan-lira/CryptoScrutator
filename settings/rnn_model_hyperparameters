@@ -1,6 +1,6 @@
 model_name = CryptoScrutator
 trainning_data_percent = 0.8
-learning_size = 5
+learning_size = 1
 prediction_size = 0
 number_of_simplernn_units = 64
 number_of_lstm_units = 64

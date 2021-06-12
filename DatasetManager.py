@@ -13,23 +13,6 @@ class DatasetManager:
    def sortDatasetByColumn(self, dataset, sorting_column):
       return dataset.sort_values(sorting_column)
 
-   def printDataset(self, dataset, number_of_rows_to_print):
-      print(dataset.head(number_of_rows_to_print))
-
-   def printDatasetValuesOfColumn(self, dataset, dataset_column):
-      for row in range(len(dataset.index)):
-         print(dataset[[dataset_column]].values[row])
-
-   def printActualAndNormalizedDatasetColumn(self, dataset, dataset_column, normalized_column):
-      for row in range(len(dataset.index)):
-         print("Actual Value: " + str(dataset[[dataset_column]].values[row]) + " | Normalized Value: " + str(normalized_column[row]))
-
-   def checkIfDatasetColumnHasNullValues(self, dataset, dataset_column):
-      return len(dataset.index) != dataset[[dataset_column]].count()[0]
-
-   def datasetColumnNullValuesCount(self, dataset, dataset_column):
-      return len(dataset.index) - dataset[[dataset_column]].count()[0]
-
    def getNormalizedTrainAndTestDataChunks(self, normalized_column, trainning_percent):
       normalized_train_data_chunk = []
       normalized_test_data_chunk = []
