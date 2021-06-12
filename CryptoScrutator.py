@@ -489,28 +489,32 @@ class CryptoScrutator:
 
    def _plotTrainnedRNNModelMetricsGraphs(self):
       if self.plot_metrics_graphs_boolean == True:
-         ## PLOT GRAPH: (X = «Number of Epochs», Y = «Training Metric» Vs «Validation Metric»)
+         ## PLOT GRAPH: (X = «Epochs», Y = «Training Metric» Vs «Validation Metric»)
          trainned_model_metrics_history = self.recurrentNeuralNetworkManager.getTrainnedModelMetricsHistory()
          metrics_to_plot = ["loss"]
          metrics_to_plot.extend(self.metrics_list)
          for metric in metrics_to_plot:
             metric_name = metric.replace("_", " ").title()
             training_metric = trainned_model_metrics_history[metric]
+            max_training_metric = max(training_metric)
             validation_metric = trainned_model_metrics_history["val_"+metric]
-            graph_title = metric_name + " Graph (" + self.rnn_model_type + ")"
+            max_validation_metric = max(validation_metric)
+            graph_title = metric_name + " Graph «" + self.rnn_model_type + "»"
             y_label = metric_name
-            x_label = "Number of Epochs"
+            x_label = "Epochs"
             x_ticks_size = self.number_of_epochs
             curves_labels = ["Training " + metric_name, "Validation " + metric_name]
             curves_colors = ["indianred", "olivedrab"]
             curves_datas = [training_metric, validation_metric]
+            curves_greatest_order_of_magnitude = math.floor(math.log10(max(max_training_metric, max_validation_metric)))
             self.graphPlotter.plotCurvesGraph(graph_title,
                                               y_label,
                                               x_label,
                                               x_ticks_size,
                                               curves_labels,
                                               curves_colors,
-                                              curves_datas)
+                                              curves_datas,
+                                              curves_greatest_order_of_magnitude)
 
    def _predictWithTrainnedModel(self):
       ## PREDICT WITH TRAINNED RNN MODEL
@@ -532,31 +536,40 @@ class CryptoScrutator:
       if self.plot_actual_values_vs_predicted_values_graph_boolean == True:
          ## PLOT GRAPH: (X = 'Days', Y = 'Actual Value' Vs 'Predicted Value')
          graph_title = self.cryptocoin_name + " Predictor"
-         y_label = self.chosen_column
+         y_label = self.chosen_column + " (USD)"
          x_label = "Days"
          x_ticks_size = len(self.chosen_column_data_actual_values_to_compare_chunk)
-         curves_labels = ["Actual Value"]
+         curves_labels = ["Actual Value (USD)"]
          curves_colors = ["gold"]
          curves_datas = [self.chosen_column_data_actual_values_to_compare_chunk]
+         max_actual_values = max(self.chosen_column_data_actual_values_to_compare_chunk)
+         max_simplernn_predicted_values = 0
+         max_lstm_predicted_values = 0
+         max_gru_predicted_values = 0
          if self.rnn_model_type == "SimpleRNN":
-            curves_labels.append("Predicted Value ("+self.rnn_model_type+")")
+            curves_labels.append("Predicted Value «"+self.rnn_model_type+"» (USD)")
             curves_colors.append("firebrick")
             curves_datas.append(self.simplernn_predicted_values)
+            max_simplernn_predicted_values = max(self.simplernn_predicted_values)
          elif self.rnn_model_type == "LSTM":
-            curves_labels.append("Predicted Value ("+self.rnn_model_type+")")
+            curves_labels.append("Predicted Value «"+self.rnn_model_type+"» (USD)")
             curves_colors.append("lightseagreen")
             curves_datas.append(self.lstm_predicted_values)
+            max_lstm_predicted_values = max(self.lstm_predicted_values)
          elif self.rnn_model_type == "GRU":
-            curves_labels.append("Predicted Value ("+self.rnn_model_type+")")
+            curves_labels.append("Predicted Value «"+self.rnn_model_type+"» (USD)")
             curves_colors.append("darkslateblue")
             curves_datas.append(self.gru_predicted_values)
+            max_gru_predicted_values = max(self.gru_predicted_values)
+         curves_greatest_order_of_magnitude = math.floor(math.log10(max(max_actual_values, max_simplernn_predicted_values, max_lstm_predicted_values, max_gru_predicted_values)))
          self.graphPlotter.plotCurvesGraph(graph_title,
                                            y_label,
                                            x_label,
                                            x_ticks_size,
                                            curves_labels,
                                            curves_colors,
-                                           curves_datas)
+                                           curves_datas,
+                                           curves_greatest_order_of_magnitude)
 
    def _clearRNNModel(self):
       ## CLEAR RNN MODEL
@@ -594,35 +607,45 @@ class CryptoScrutator:
          if chosen_column_data_actual_values_to_compare_chunk_valid and (simplernn_predicted_values_valid or lstm_predicted_values_valid or gru_predicted_values_valid):
             ## PLOT GRAPH: (X = «Days», Y = «Actual Values» Vs [«Predicted Values (SimpleRNN)» Vs «Predicted Values (LSTM)» Vs «Predicted Values (GRU)»])
             graph_title = self.cryptocoin_name + " Predictor"
-            y_label = self.chosen_column
+            y_label = self.chosen_column + " (USD)"
             x_label = "Days"
             x_ticks_size = len(self.chosen_column_data_actual_values_to_compare_chunk)
             curves_labels = []
             curves_colors = []
             curves_datas = []
+            max_actual_values = 0
+            max_simplernn_predicted_values = 0
+            max_lstm_predicted_values = 0
+            max_gru_predicted_values = 0
             if chosen_column_data_actual_values_to_compare_chunk_valid:
-               curves_labels.append("Actual Value")
+               curves_labels.append("Actual Value (USD)")
                curves_colors.append("gold")
                curves_datas.append(self.chosen_column_data_actual_values_to_compare_chunk)
+               max_actual_values = max(self.chosen_column_data_actual_values_to_compare_chunk)
             if simplernn_predicted_values_valid:
-               curves_labels.append("Predicted Value (SimpleRNN)")
+               curves_labels.append("Predicted Value «SimpleRNN» (USD)")
                curves_colors.append("firebrick")
                curves_datas.append(self.simplernn_predicted_values)
+               max_simplernn_predicted_values = max(self.simplernn_predicted_values)
             if lstm_predicted_values_valid:
-               curves_labels.append("Predicted Value (LSTM)")
+               curves_labels.append("Predicted Value «LSTM» (USD)")
                curves_colors.append("lightseagreen")
                curves_datas.append(self.lstm_predicted_values)
+               max_lstm_predicted_values = max(self.lstm_predicted_values)
             if gru_predicted_values_valid:
-               curves_labels.append("Predicted Value (GRU)")
+               curves_labels.append("Predicted Value «GRU» (USD)")
                curves_colors.append("darkslateblue")
                curves_datas.append(self.gru_predicted_values)
+               max_gru_predicted_values = max(self.gru_predicted_values)
+            curves_greatest_order_of_magnitude = math.floor(math.log10(max(max_actual_values, max_simplernn_predicted_values, max_lstm_predicted_values, max_gru_predicted_values)))
             self.graphPlotter.plotCurvesGraph(graph_title,
                                               y_label,
                                               x_label,
                                               x_ticks_size,
                                               curves_labels,
                                               curves_colors,
-                                              curves_datas)
+                                              curves_datas,
+                                              curves_greatest_order_of_magnitude)
 
    def executeInvestmentSimulation(self):
       dataset_data_lines_count = self._getDatasetFileDataLinesCount()
@@ -671,17 +694,17 @@ class CryptoScrutator:
       usd_bars_labels = []
       usd_bars_colors = []
       usd_bars_heights = []
-      usd_graph_title = "NaiveInvestor Simulation"
-      usd_graph_subtitle = "Initial Balance: " + str(self.initial_balance_in_usd) + " USD + " + str(self.initial_balance_in_bitcoin) + " Bitcoin" + "\nSelling Bitcoin Strategy Percent: " + str(self.selling_bitcoin_strategy_percent) + " | Buying Bitcoin Strategy Percent: " + str(self.buying_bitcoin_strategy_percent)
+      usd_graph_title = "Investment Simulation"
+      usd_graph_subtitle = "Initial Balance: " + str(self.initial_balance_in_usd) + " USD + " + str(self.initial_balance_in_bitcoin) + " BTC" + "\nSelling Bitcoin Strategy Percent: " + str(self.selling_bitcoin_strategy_percent) + " | Buying Bitcoin Strategy Percent: " + str(self.buying_bitcoin_strategy_percent)
       usd_y_label = "USD Balance"
       usd_x_label = "Predictor"
 
       bitcoin_bars_labels = []
       bitcoin_bars_colors = []
       bitcoin_bars_heights = []
-      bitcoin_graph_title = "NaiveInvestor Simulation"
-      bitcoin_graph_subtitle = "Initial Balance: " + str(self.initial_balance_in_usd) + " USD + " + str(self.initial_balance_in_bitcoin) + " Bitcoin" + "\nSelling Bitcoin Strategy Percent: " + str(self.selling_bitcoin_strategy_percent) + " | Buying Bitcoin Strategy Percent: " + str(self.buying_bitcoin_strategy_percent)
-      bitcoin_y_label = "Bitcoin Balance"
+      bitcoin_graph_title = "Investment Simulation"
+      bitcoin_graph_subtitle = "Initial Balance: " + str(self.initial_balance_in_usd) + " USD + " + str(self.initial_balance_in_bitcoin) + " BTC" + "\nSelling Bitcoin Strategy Percent: " + str(self.selling_bitcoin_strategy_percent) + " | Buying Bitcoin Strategy Percent: " + str(self.buying_bitcoin_strategy_percent)
+      bitcoin_y_label = "BTC Balance"
       bitcoin_x_label = "Predictor"
 
       if chosen_column_data_actual_values_to_compare_chunk_valid:
@@ -700,10 +723,10 @@ class CryptoScrutator:
          hypothetical_perfect_prediction_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
          print("«Hypothetical Perfect Prediction» Final Balance in USD: " + str(hypothetical_perfect_prediction_usd_balance))
          print("«Hypothetical Perfect Prediction» Final Balance in Bitcoin: " + str(hypothetical_perfect_prediction_bitcoin_balance))
-         usd_bars_labels.append("Hypothetical Perfect Prediction")
+         usd_bars_labels.append("«Hypothetical Perfect Prediction»")
          usd_bars_colors.append("gold")
          usd_bars_heights.append(float(hypothetical_perfect_prediction_usd_balance))
-         bitcoin_bars_labels.append("Hypothetical Perfect Prediction")
+         bitcoin_bars_labels.append("«Hypothetical Perfect Prediction»")
          bitcoin_bars_colors.append("gold")
          bitcoin_bars_heights.append(float(hypothetical_perfect_prediction_bitcoin_balance))
 
@@ -723,10 +746,10 @@ class CryptoScrutator:
          simplernn_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
          print("«SimpleRNN» Final Balance in USD: " + str(simplernn_usd_balance))
          print("«SimpleRNN» Final Balance in Bitcoin: " + str(simplernn_bitcoin_balance))
-         usd_bars_labels.append("SimpleRNN")
+         usd_bars_labels.append("«SimpleRNN»")
          usd_bars_colors.append("firebrick")
          usd_bars_heights.append(float(simplernn_usd_balance))
-         bitcoin_bars_labels.append("SimpleRNN")
+         bitcoin_bars_labels.append("«SimpleRNN»")
          bitcoin_bars_colors.append("firebrick")
          bitcoin_bars_heights.append(float(simplernn_bitcoin_balance))
 
@@ -746,10 +769,10 @@ class CryptoScrutator:
          lstm_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
          print("«LSTM» Final Balance in USD: " + str(lstm_usd_balance))
          print("«LSTM» Final Balance in Bitcoin: " + str(lstm_bitcoin_balance))
-         usd_bars_labels.append("LSTM")
+         usd_bars_labels.append("«LSTM»")
          usd_bars_colors.append("lightseagreen")
          usd_bars_heights.append(float(lstm_usd_balance))
-         bitcoin_bars_labels.append("LSTM")
+         bitcoin_bars_labels.append("«LSTM»")
          bitcoin_bars_colors.append("lightseagreen")
          bitcoin_bars_heights.append(float(lstm_bitcoin_balance))
 
@@ -769,10 +792,10 @@ class CryptoScrutator:
          gru_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
          print("«GRU» Final Balance in USD: " + str(gru_usd_balance))
          print("«GRU» Final Balance in Bitcoin: " + str(gru_bitcoin_balance))
-         usd_bars_labels.append("GRU")
+         usd_bars_labels.append("«GRU»")
          usd_bars_colors.append("darkslateblue")
          usd_bars_heights.append(float(gru_usd_balance))
-         bitcoin_bars_labels.append("GRU")
+         bitcoin_bars_labels.append("«GRU»")
          bitcoin_bars_colors.append("darkslateblue")
          bitcoin_bars_heights.append(float(gru_bitcoin_balance))
 
