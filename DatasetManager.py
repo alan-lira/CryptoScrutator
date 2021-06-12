@@ -20,9 +20,9 @@ class DatasetManager:
       for row in range(len(dataset.index)):
          print(dataset[[dataset_column]].values[row])
 
-   def printRealAndNormalizedDatasetColumn(self, dataset, dataset_column, normalized_column):
+   def printActualAndNormalizedDatasetColumn(self, dataset, dataset_column, normalized_column):
       for row in range(len(dataset.index)):
-         print("Real = " + str(dataset[[dataset_column]].values[row]) + " --> Normalized = " + str(normalized_column[row]))
+         print("Actual Value: " + str(dataset[[dataset_column]].values[row]) + " | Normalized Value: " + str(normalized_column[row]))
 
    def checkIfDatasetColumnHasNullValues(self, dataset, dataset_column):
       return len(dataset.index) != dataset[[dataset_column]].count()[0]
@@ -57,21 +57,21 @@ class DatasetManager:
          normalized_testing_to_predict_chunk.append(numpy.reshape(normalized_testing_chunk[range(index - learning_size, index)], (learning_size, 1)))
       return numpy.array(normalized_testing_to_predict_chunk)
 
-   def getRealValuesToCompareChunk(self, chosen_column, start_index, end_index, learning_size, prediction_size):
-      real_values_to_compare_chunk = []
+   def getActualValuesToCompareChunk(self, chosen_column, start_index, end_index, learning_size, prediction_size):
+      actual_values_to_compare_chunk = []
       for index in range(start_index + learning_size, end_index):
-         real_values_to_compare_chunk.append(chosen_column[index + prediction_size])
-      return numpy.array(real_values_to_compare_chunk)
+         actual_values_to_compare_chunk.append(chosen_column[index + prediction_size])
+      return numpy.array(actual_values_to_compare_chunk)
 
-   def printRegressionMetrics(self, real_values, predicted_values):
-      print("Explained Variance Regression Score: " + str(explained_variance_score(real_values, predicted_values)))
-      print("Maximum Residual Error: " + str(max_error(real_values, predicted_values)))
-      print("Mean Absolute Error: " + str(mean_absolute_error(real_values, predicted_values)))
-      print("Mean Square Error: " + str(mean_squared_error(real_values, predicted_values)))
-      print("Squared Logarithmic (Quadratic) Error: " + str(mean_squared_log_error(real_values, predicted_values)))
-      print("Mean Absolute Percentage Error (Deviation): " + str(mean_absolute_percentage_error(real_values, predicted_values)))
-      print("Median Absolute Error: " + str(median_absolute_error(real_values, predicted_values)))
-      print("Coefficient of Determination (R²): " + str(r2_score(real_values, predicted_values)))
-      print("Mean Poisson Deviance: " + str(mean_tweedie_deviance(real_values, predicted_values, power = 1)))
-      print("Mean Gamma Deviance: " + str(mean_tweedie_deviance(real_values, predicted_values, power = 2)))
+   def printRegressionMetrics(self, actual_values, predicted_values):
+      print("Explained Variance Regression Score: " + str(explained_variance_score(actual_values, predicted_values)))
+      print("Maximum Residual Error: " + str(max_error(actual_values, predicted_values)))
+      print("Mean Absolute Error: " + str(mean_absolute_error(actual_values, predicted_values)))
+      print("Mean Square Error: " + str(mean_squared_error(actual_values, predicted_values)))
+      print("Squared Logarithmic (Quadratic) Error: " + str(mean_squared_log_error(actual_values, predicted_values)))
+      print("Mean Absolute Percentage Error (Deviation): " + str(mean_absolute_percentage_error(actual_values, predicted_values)))
+      print("Median Absolute Error: " + str(median_absolute_error(actual_values, predicted_values)))
+      print("Coefficient of Determination (R²): " + str(r2_score(actual_values, predicted_values)))
+      print("Mean Poisson Deviance: " + str(mean_tweedie_deviance(actual_values, predicted_values, power = 1)))
+      print("Mean Gamma Deviance: " + str(mean_tweedie_deviance(actual_values, predicted_values, power = 2)))
       print("\n")

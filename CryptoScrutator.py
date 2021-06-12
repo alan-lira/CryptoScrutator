@@ -1,9 +1,11 @@
 import csv
 import os
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # AVOID TENSORFLOW LOGGING
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # AVOID «TensorFlow» LOGGING
 import string
+import time
 from DatasetManager import *
 from GraphPlotter import *
+from NaiveInvestor import *
 from RecurrentNeuralNetworkManager import *
 from sklearn.preprocessing import MinMaxScaler
 
@@ -12,11 +14,12 @@ class CryptoScrutator:
    def __init__(self):
       self.datasetManager = DatasetManager()
       self.graphPlotter = GraphPlotter()
+      self.naiveInvestor = NaiveInvestor()
       self.recurrentNeuralNetworkManager = RecurrentNeuralNetworkManager()
       self.min_max_scaler = MinMaxScaler()
       self.print_metrics_history_boolean = None
       self.plot_metrics_graphs_boolean = None
-      self.plot_real_values_vs_predicted_values_graph_boolean = None
+      self.plot_actual_values_vs_predicted_values_graph_boolean = None
       self.print_regression_metrics_boolean = None
       self.plot_all_rnn_models_comparison_graph_boolean = None
       self.cryptocoin_name = None
@@ -24,7 +27,7 @@ class CryptoScrutator:
       self.sorting_column = None
       self.chosen_column = None
       self.cryptocoin_dataset = None
-      self.chosen_column_data_real_values_to_compare_chunk = None
+      self.chosen_column_data_actual_values_to_compare_chunk = None
       self.normalized_chosen_column_data = None
       self.trainning_data_percent = None
       self.normalized_trainning_data_chunk = None
@@ -60,6 +63,10 @@ class CryptoScrutator:
       self.simplernn_predicted_values = None
       self.lstm_predicted_values = None
       self.gru_predicted_values = None
+      self.initial_balance_in_usd = None
+      self.initial_balance_in_bitcoin = None
+      self.selling_bitcoin_strategy_percent = None
+      self.buying_bitcoin_strategy_percent = None
 
    def loadCryptoScrutatorSettings(self, crypto_scrutator_settings_file):
       with open(crypto_scrutator_settings_file, mode = "r") as settings_file:
@@ -73,8 +80,8 @@ class CryptoScrutator:
                   self.print_metrics_history_boolean = value == "True"
                elif key == "plot_metrics_graphs_boolean":
                   self.plot_metrics_graphs_boolean = value == "True"
-               elif key == "plot_real_values_vs_predicted_values_graph_boolean":
-                  self.plot_real_values_vs_predicted_values_graph_boolean = value == "True"
+               elif key == "plot_actual_values_vs_predicted_values_graph_boolean":
+                  self.plot_actual_values_vs_predicted_values_graph_boolean = value == "True"
                elif key == "print_regression_metrics_boolean":
                   self.print_regression_metrics_boolean = value == "True"
                elif key == "plot_all_rnn_models_comparison_graph_boolean":
@@ -269,6 +276,47 @@ class CryptoScrutator:
                elif key == "shuffle_boolean":
                   self.shuffle_boolean = value == "True"
 
+   def loadInvestmentSimulatorSettings(self, investment_simulator_settings_file):
+      with open(investment_simulator_settings_file, mode = "r") as settings_file:
+         for line in settings_file:
+            line = line.strip()
+            splitted_line = line.split(" = ")
+            key = splitted_line[0]
+            value = splitted_line[1]
+            if len(splitted_line) > 1:
+               if key == "initial_balance_in_usd":
+                  initial_balance_in_usd = float(value)
+                  if initial_balance_in_usd >= 0:
+                     self.initial_balance_in_usd = initial_balance_in_usd
+                     self.naiveInvestor.setBalanceInUSD(self.initial_balance_in_usd)
+                  else:
+                     print("'initial_balance_in_usd' parameter must be greater than or equal to 0.")
+                     raise SystemExit
+               elif key == "initial_balance_in_bitcoin":
+                  initial_balance_in_bitcoin = float(value)
+                  if initial_balance_in_bitcoin >= 0:
+                     self.initial_balance_in_bitcoin = initial_balance_in_bitcoin
+                     self.naiveInvestor.setBalanceInBitcoin(self.initial_balance_in_bitcoin)
+                  else:
+                     print("'initial_balance_in_bitcoin' parameter must be greater than or equal to 0.")
+                     raise SystemExit
+               elif key == "selling_bitcoin_strategy_percent":
+                  selling_bitcoin_strategy_percent = float(value)
+                  if 0 <= selling_bitcoin_strategy_percent <= 1:
+                     self.selling_bitcoin_strategy_percent = selling_bitcoin_strategy_percent
+                     self.naiveInvestor.setSellingBitcoinStrategyPercent(self.selling_bitcoin_strategy_percent)
+                  else:
+                     print("'selling_bitcoin_strategy_percent' parameter must lie between 0 and 1, inclusive (E.g., 0.8).")
+                     raise SystemExit
+               elif key == "buying_bitcoin_strategy_percent":
+                  buying_bitcoin_strategy_percent = float(value)
+                  if 0 <= buying_bitcoin_strategy_percent <= 1:
+                     self.buying_bitcoin_strategy_percent = buying_bitcoin_strategy_percent
+                     self.naiveInvestor.setBuyingBitcoinStrategyPercent(self.buying_bitcoin_strategy_percent)
+                  else:
+                     print("'buying_strategy_percent' parameter must lie between 0 and 1, inclusive (E.g., 0.4).")
+                     raise SystemExit
+
    def loadCryptocoinDatasetCSV(self):
       self.cryptocoin_dataset = self.datasetManager.loadDataset(self.dataset_file)
 
@@ -364,13 +412,13 @@ class CryptoScrutator:
       test_end_index = len(self.normalized_testing_data_chunk)
       self.normalized_testing_data_to_predict_chunk = self.datasetManager.getToPredictChunkFromNormalizedTestingChunk(self.normalized_testing_data_chunk, test_start_index, test_end_index, self.learning_size)
 
-   def setChosenColumnDataRealValuesToCompareChunk(self):
+   def setChosenColumnDataActualValuesToCompareChunk(self):
       chosen_column_data = self.cryptocoin_dataset[[self.chosen_column]].values
       trainning_chunk_size = int(len(chosen_column_data) * self.trainning_data_percent)
       testing_chunk_size = len(chosen_column_data) - trainning_chunk_size
       start_index = trainning_chunk_size
       end_index = start_index + testing_chunk_size
-      self.chosen_column_data_real_values_to_compare_chunk = self.datasetManager.getRealValuesToCompareChunk(chosen_column_data, start_index, end_index, self.learning_size, self.prediction_size)
+      self.chosen_column_data_actual_values_to_compare_chunk = self.datasetManager.getActualValuesToCompareChunk(chosen_column_data, start_index, end_index, self.learning_size, self.prediction_size)
 
    def denormalizeValues(self, normalized_values):
       return self.min_max_scaler.inverse_transform(normalized_values)
@@ -379,35 +427,35 @@ class CryptoScrutator:
       self.rnn_model_type = rnn_model_type
 
    def _createRNNModel(self):
-      ## CREATE 'rnn_model_type' RNN MODEL
+      ## CREATE «rnn_model_type» RNN MODEL
       self.recurrentNeuralNetworkManager.createEmptySequentialModel(self.model_name+"_"+self.rnn_model_type)
 
       if self.rnn_model_type == "SimpleRNN":
-         ## ADD SIMPLERNN LAYER
+         ## ADD «SimpleRNN» LAYER
          self.recurrentNeuralNetworkManager.addSimpleRecurrentNeuralNetworkLayer(self.number_of_simplernn_units,
                                                                                  self.activation,
                                                                                  self.recurrent_initializer,
                                                                                  self.input_shape)   
       elif self.rnn_model_type == "LSTM":
-         ## ADD LSTM LAYER
+         ## ADD «LSTM» LAYER
          self.recurrentNeuralNetworkManager.addLongShortTermMemoryLayer(self.number_of_lstm_units,
                                                                         self.activation,
                                                                         self.recurrent_activation,
                                                                         self.input_shape)
       elif self.rnn_model_type == "GRU":
-         ## ADD GRU LAYER
+         ## ADD «GRU» LAYER
          self.recurrentNeuralNetworkManager.addGatedRecurrentUnitLayer(self.number_of_gru_units,
                                                                        self.activation,
                                                                        self.recurrent_activation,
                                                                        self.input_shape)
 
-      ## ADD LEAKYRELU LAYER
+      ## ADD «LeakyReLu» LAYER
       self.recurrentNeuralNetworkManager.addLeakyRectifiedLinearUnitLayer(self.negative_slope_coefficient)
 
-      ## ADD DROPOUT LAYER
+      ## ADD «Dropout» LAYER
       self.recurrentNeuralNetworkManager.addDropoutLayer(self.fraction_of_the_input_units_to_drop)
 
-      ## ADD DENSE LAYER
+      ## ADD «Dense» LAYER
       self.recurrentNeuralNetworkManager.addDenseLayer(self.number_of_dense_units)
 
       ## LOAD LOSS FUNCTION
@@ -441,7 +489,7 @@ class CryptoScrutator:
 
    def _plotTrainnedRNNModelMetricsGraphs(self):
       if self.plot_metrics_graphs_boolean == True:
-         ## PLOT GRAPH: (X = 'Number of Epochs', Y = 'Training Metric' Vs 'Validation Metric')
+         ## PLOT GRAPH: (X = «Number of Epochs», Y = «Training Metric» Vs «Validation Metric»)
          trainned_model_metrics_history = self.recurrentNeuralNetworkManager.getTrainnedModelMetricsHistory()
          metrics_to_plot = ["loss"]
          metrics_to_plot.extend(self.metrics_list)
@@ -485,15 +533,15 @@ class CryptoScrutator:
       elif self.rnn_model_type == "GRU":
          self.gru_predicted_values = denormalized_predicted_values
 
-   def _plotRealValuesPredictedValuesGraphComparison(self):
-      ## PLOT REAL VALUES VS PREDICTED VALUES GRAPH
-      if self.plot_real_values_vs_predicted_values_graph_boolean == True:
-         ## PLOT GRAPH: (X = 'Days', Y = 'Real Value' Vs 'Predicted Value')
+   def _plotActualValuesPredictedValuesGraphComparison(self):
+      ## PLOT ACTUAL VALUES VS PREDICTED VALUES GRAPH
+      if self.plot_actual_values_vs_predicted_values_graph_boolean == True:
+         ## PLOT GRAPH: (X = 'Days', Y = 'Actual Value' Vs 'Predicted Value')
          graph_title = self.cryptocoin_name + " Predictor"
          y_label = self.chosen_column
-         first_curve_label = "Real Value"
+         first_curve_label = "Actual Value"
          first_curve_color = "blue"
-         first_curve_data = self.chosen_column_data_real_values_to_compare_chunk
+         first_curve_data = self.chosen_column_data_actual_values_to_compare_chunk
          second_curve_label = "Predicted Value ("+self.rnn_model_type+")"
          second_curve_color = None
          second_curve_data = None
@@ -507,7 +555,7 @@ class CryptoScrutator:
             second_curve_color = "green"
             second_curve_data = self.gru_predicted_values
          x_label = "Days"
-         x_ticks_size = len(self.chosen_column_data_real_values_to_compare_chunk)
+         x_ticks_size = len(self.chosen_column_data_actual_values_to_compare_chunk)
          self.graphPlotter.plotTwoCurvesGraph(graph_title,
                                               y_label,
                                               first_curve_label,
@@ -523,35 +571,42 @@ class CryptoScrutator:
       ## CLEAR RNN MODEL
       self.recurrentNeuralNetworkManager.clearModel()
 
-   def _printRealValuesPredictedValuesRegressionMetrics(self):
+   def _printActualValuesPredictedValuesRegressionMetrics(self):
       if self.print_regression_metrics_boolean == True:
          ## PRINT REGRESSION METRICS
          if self.rnn_model_type == "SimpleRNN":
-            self.datasetManager.printRegressionMetrics(self.chosen_column_data_real_values_to_compare_chunk, self.simplernn_predicted_values)
+            self.datasetManager.printRegressionMetrics(self.chosen_column_data_actual_values_to_compare_chunk, self.simplernn_predicted_values)
          elif self.rnn_model_type == "LSTM":
-            self.datasetManager.printRegressionMetrics(self.chosen_column_data_real_values_to_compare_chunk, self.lstm_predicted_values)
+            self.datasetManager.printRegressionMetrics(self.chosen_column_data_actual_values_to_compare_chunk, self.lstm_predicted_values)
          elif self.rnn_model_type == "GRU":
-            self.datasetManager.printRegressionMetrics(self.chosen_column_data_real_values_to_compare_chunk, self.gru_predicted_values)
+            self.datasetManager.printRegressionMetrics(self.chosen_column_data_actual_values_to_compare_chunk, self.gru_predicted_values)
 
    def executeRNNModel(self):
       self._createRNNModel()
+      startTrainTime = time.time()
       self._trainRNNModel()
+      endTrainTime = time.time()
+      print("\n" + str(self.rnn_model_type) + " Model Trainning Time: " + str(endTrainTime - startTrainTime) + " seconds.\n")
       self._printTrainnedRNNModelMetricsHistory()
       self._plotTrainnedRNNModelMetricsGraphs()
       self._predictWithTrainnedModel()
       self._denormalizePredictedValues()
-      self._plotRealValuesPredictedValuesGraphComparison()
-      self._printRealValuesPredictedValuesRegressionMetrics()
+      self._plotActualValuesPredictedValuesGraphComparison()
+      self._printActualValuesPredictedValuesRegressionMetrics()
 
    def plotAllRNNModelsComparisonGraph(self):
       if self.plot_all_rnn_models_comparison_graph_boolean == True:
-         if any(self.chosen_column_data_real_values_to_compare_chunk) and any(self.simplernn_predicted_values) and any(self.lstm_predicted_values) and any(self.gru_predicted_values):
-            ## PLOT GRAPH: (X = 'Days', Y = 'Real Values' Vs 'Predicted Values (SimpleRNN)' Vs 'Predicted Values (LSTM)' Vs 'Predicted Values (GRU)')
+         chosen_column_data_actual_values_to_compare_chunk_valid = self.chosen_column_data_actual_values_to_compare_chunk is not None and any(self.chosen_column_data_actual_values_to_compare_chunk)
+         simplernn_predicted_values_valid = self.simplernn_predicted_values is not None and any(self.simplernn_predicted_values)
+         lstm_predicted_values_valid = self.lstm_predicted_values is not None and any(self.lstm_predicted_values)
+         gru_predicted_values_valid = self.gru_predicted_values is not None and any(self.gru_predicted_values)
+         if chosen_column_data_actual_values_to_compare_chunk_valid and simplernn_predicted_values_valid and lstm_predicted_values_valid and gru_predicted_values_valid:
+            ## PLOT GRAPH: (X = «Days», Y = «Actual Values» Vs «Predicted Values (SimpleRNN)» Vs «Predicted Values (LSTM)» Vs «Predicted Values (GRU)»)
             graph_title = self.cryptocoin_name + " Predictor"
             y_label = self.chosen_column
-            first_curve_label = "Real Value"
+            first_curve_label = "Actual Value"
             first_curve_color = "blue"
-            first_curve_data = self.chosen_column_data_real_values_to_compare_chunk
+            first_curve_data = self.chosen_column_data_actual_values_to_compare_chunk
             second_curve_label = "Predicted Value (SimpleRNN)"
             second_curve_color = "red"
             second_curve_data = self.simplernn_predicted_values
@@ -562,7 +617,7 @@ class CryptoScrutator:
             fourth_curve_color = "green"
             fourth_curve_data = self.gru_predicted_values
             x_label = "Days"
-            x_ticks_size = len(self.chosen_column_data_real_values_to_compare_chunk)
+            x_ticks_size = len(self.chosen_column_data_actual_values_to_compare_chunk)
             self.graphPlotter.plotFourCurvesGraph(graph_title,
                                                   y_label,
                                                   first_curve_label,
@@ -580,30 +635,154 @@ class CryptoScrutator:
                                                   x_label,
                                                   x_ticks_size)
 
+   def executeInvestmentSimulation(self):
+      dataset_data_lines_count = self._getDatasetFileDataLinesCount()
+      trainning_chunk_size = int(dataset_data_lines_count * self.trainning_data_percent)
+      testing_chunk_size = dataset_data_lines_count - trainning_chunk_size
+      start_index = trainning_chunk_size
+      end_index = start_index + testing_chunk_size
+
+      ## GET «Date» COLUMN ACTUAL VALUES TO COMPARE
+      date_column_data = self.cryptocoin_dataset[["Date"]].values
+      date_column_data_actual_values_to_compare_chunk = self.datasetManager.getActualValuesToCompareChunk(date_column_data, start_index, end_index, self.learning_size, self.prediction_size)
+
+      ## GET «Open» COLUMN ACTUAL VALUES TO COMPARE
+      open_column_data = self.cryptocoin_dataset[["Open"]].values
+      open_column_data_actual_values_to_compare_chunk = self.datasetManager.getActualValuesToCompareChunk(open_column_data, start_index, end_index, self.learning_size, self.prediction_size)
+
+      date_column_data_actual_values_to_compare_chunk_valid = date_column_data_actual_values_to_compare_chunk is not None and any(date_column_data_actual_values_to_compare_chunk)
+      open_column_data_actual_values_to_compare_chunk_valid = open_column_data_actual_values_to_compare_chunk is not None and any(open_column_data_actual_values_to_compare_chunk)
+      chosen_column_data_actual_values_to_compare_chunk_valid = self.chosen_column_data_actual_values_to_compare_chunk is not None and any(self.chosen_column_data_actual_values_to_compare_chunk)
+      simplernn_predicted_values_valid = self.simplernn_predicted_values is not None and any(self.simplernn_predicted_values)
+      lstm_predicted_values_valid = self.lstm_predicted_values is not None and any(self.lstm_predicted_values)
+      gru_predicted_values_valid = self.gru_predicted_values is not None and any(self.gru_predicted_values)
+
+      ## PRINT RNN MODELS «chosen_column»'s PREDICTED VALUES COMPARED TO ACTUAL VALUES (ROW-BY-ROW)
+      for row in range(len(self.chosen_column_data_actual_values_to_compare_chunk)):
+         date_column_string = ""
+         open_column_string = ""
+         chosen_column_string = ""
+         simplernn_chosen_column_prediction_string = ""
+         lstm_chosen_column_prediction_string = ""
+         gru_chosen_column_prediction_string = ""
+         if date_column_data_actual_values_to_compare_chunk_valid:
+            date_column_string = "Date = " + str(date_column_data_actual_values_to_compare_chunk[row])
+         if open_column_data_actual_values_to_compare_chunk_valid:
+            open_column_string = " | Open = " + str(open_column_data_actual_values_to_compare_chunk[row])
+         if chosen_column_data_actual_values_to_compare_chunk_valid:
+            chosen_column_string = " | "+self.chosen_column+" = " + str(self.chosen_column_data_actual_values_to_compare_chunk[row])
+         if simplernn_predicted_values_valid:
+            simplernn_chosen_column_prediction_string = " | SimpleRNN_" + self.chosen_column + "_Prediction = " + str(self.simplernn_predicted_values[row])
+         if lstm_predicted_values_valid:
+            lstm_chosen_column_prediction_string = " | LSTM_" + self.chosen_column + "_Prediction = " + str(self.lstm_predicted_values[row])
+         if gru_predicted_values_valid:
+            gru_chosen_column_prediction_string = " | GRU_" + self.chosen_column + "_Prediction = " + str(self.gru_predicted_values[row])
+         print(date_column_string + open_column_string + chosen_column_string + simplernn_chosen_column_prediction_string + lstm_chosen_column_prediction_string + gru_chosen_column_prediction_string)
+
+      if chosen_column_data_actual_values_to_compare_chunk_valid:
+         ## SIMULATE INVESTIMENTS WITH ACTUAL VALUES (AS IF THEY WERE PERFECTLY PREDICTED, HYPOTHETICALLY)
+         hypothetical_perfect_prediction_usd_balance = None
+         hypothetical_perfect_prediction_bitcoin_balance = None
+         self.naiveInvestor.setBalanceInUSD(self.initial_balance_in_usd)
+         self.naiveInvestor.setBalanceInBitcoin(self.initial_balance_in_bitcoin)
+         print("«Hypothetical Perfect Prediction» Initial Balance in USD: " + str(self.naiveInvestor.getBalanceInUSD()))
+         print("«Hypothetical Perfect Prediction» Initial Balance in Bitcoin: " + str(self.naiveInvestor.getBalanceInBitcoin()))
+         for row in range(len(self.chosen_column_data_actual_values_to_compare_chunk)):
+            self.naiveInvestor.investmentAction(date_column_data_actual_values_to_compare_chunk[row],
+                                                open_column_data_actual_values_to_compare_chunk[row],
+                                                self.chosen_column_data_actual_values_to_compare_chunk[row])
+         hypothetical_perfect_prediction_usd_balance = self.naiveInvestor.getBalanceInUSD()
+         hypothetical_perfect_prediction_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
+         print("«Hypothetical Perfect Prediction» Final Balance in USD: " + str(hypothetical_perfect_prediction_usd_balance))
+         print("«Hypothetical Perfect Prediction» Final Balance in Bitcoin: " + str(hypothetical_perfect_prediction_bitcoin_balance))
+
+      if simplernn_predicted_values_valid:
+         ## SIMULATE INVESTIMENTS WITH «SimpleRNN» LAYER BASED RNN MODEL PREDICTED VALUES
+         simplernn_usd_balance = None
+         simplernn_bitcoin_balance = None
+         self.naiveInvestor.setBalanceInUSD(self.initial_balance_in_usd)
+         self.naiveInvestor.setBalanceInBitcoin(self.initial_balance_in_bitcoin)
+         print("«SimpleRNN» Initial Balance in USD: " + str(self.naiveInvestor.getBalanceInUSD()))
+         print("«SimpleRNN» Initial Balance in Bitcoin: " + str(self.naiveInvestor.getBalanceInBitcoin()))
+         for row in range(len(self.chosen_column_data_actual_values_to_compare_chunk)):
+            self.naiveInvestor.investmentAction(date_column_data_actual_values_to_compare_chunk[row],
+                                                open_column_data_actual_values_to_compare_chunk[row],
+                                                self.simplernn_predicted_values[row])
+         simplernn_usd_balance = self.naiveInvestor.getBalanceInUSD()
+         simplernn_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
+         print("«SimpleRNN» Final Balance in USD: " + str(simplernn_usd_balance))
+         print("«SimpleRNN» Final Balance in Bitcoin: " + str(simplernn_bitcoin_balance))
+
+      if lstm_predicted_values_valid:
+         ## SIMULATE INVESTIMENTS WITH «LSTM» LAYER BASED RNN MODEL PREDICTED VALUES
+         lstm_usd_balance = None
+         lstm_bitcoin_balance = None
+         self.naiveInvestor.setBalanceInUSD(self.initial_balance_in_usd)
+         self.naiveInvestor.setBalanceInBitcoin(self.initial_balance_in_bitcoin)
+         print("«LSTM» Initial Balance in USD: " + str(self.naiveInvestor.getBalanceInUSD()))
+         print("«LSTM» Initial Balance in Bitcoin: " + str(self.naiveInvestor.getBalanceInBitcoin()))
+         for row in range(len(self.chosen_column_data_actual_values_to_compare_chunk)):
+            self.naiveInvestor.investmentAction(date_column_data_actual_values_to_compare_chunk[row],
+                                                open_column_data_actual_values_to_compare_chunk[row],
+                                                self.lstm_predicted_values[row])
+         lstm_usd_balance = self.naiveInvestor.getBalanceInUSD()
+         lstm_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
+         print("«LSTM» Final Balance in USD: " + str(lstm_usd_balance))
+         print("«LSTM» Final Balance in Bitcoin: " + str(lstm_bitcoin_balance))
+
+      if gru_predicted_values_valid:
+         ## SIMULATE INVESTIMENTS WITH «GRU» LAYER BASED RNN MODEL PREDICTED VALUES
+         gru_usd_balance = None
+         gru_bitcoin_balance = None
+         self.naiveInvestor.setBalanceInUSD(self.initial_balance_in_usd)
+         self.naiveInvestor.setBalanceInBitcoin(self.initial_balance_in_bitcoin)
+         print("«GRU» Initial Balance in USD: " + str(self.naiveInvestor.getBalanceInUSD()))
+         print("«GRU» Initial Balance in Bitcoin: " + str(self.naiveInvestor.getBalanceInBitcoin()))
+         for row in range(len(self.chosen_column_data_actual_values_to_compare_chunk)):
+            self.naiveInvestor.investmentAction(date_column_data_actual_values_to_compare_chunk[row],
+                                                open_column_data_actual_values_to_compare_chunk[row],
+                                                self.gru_predicted_values[row])
+         gru_usd_balance = self.naiveInvestor.getBalanceInUSD()
+         gru_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
+         print("«GRU» Final Balance in USD: " + str(gru_usd_balance))
+         print("«GRU» Final Balance in Bitcoin: " + str(gru_bitcoin_balance))
+
 def main():
    cryptoScrutator = CryptoScrutator()
+
    cryptoScrutator.loadCryptoScrutatorSettings("settings/crypto_scrutator_settings") ## LOAD «crypto_scrutator_settings»
    cryptoScrutator.loadDatasetSettings("settings/dataset_settings") ## LOAD «dataset_settings»
    cryptoScrutator.loadRNNModelHyperparametersSettings("settings/rnn_model_hyperparameters") ## LOAD «rnn_model_hyperparameters»
+   cryptoScrutator.loadInvestmentSimulatorSettings("settings/investment_simulator_settings") ## LOAD «investment_simulator_settings»
+
    cryptoScrutator.handleDatasetFileChosenAndSortingColumnsNullData() ## HANDLE «dataset_file»'s «chosen_column» AND «sorting_column» NULL DATA
    cryptoScrutator.verifyDatasetFileHasEnoughDataToBePartitioned() ## VERIFY IF «dataset_file» HAS ENOUGH DATA TO BE PARTITIONED
+
    cryptoScrutator.loadCryptocoinDatasetCSV() ## LOAD «dataset_file» AS «cryptocoin_dataset»
    cryptoScrutator.sortCryptocoinDatasetBySortingColumn() ## SORT «cryptocoin_dataset» BY «sorting_column» (ASCENDING MODE)
-   cryptoScrutator.setChosenColumnDataRealValuesToCompareChunk() ## SET «chosen_column_data_real_values_to_compare_chunk» (FOR FUTURE COMPARISON AFTER MODEL PREDICTING PHASE)
+
+   cryptoScrutator.setChosenColumnDataActualValuesToCompareChunk() ## SET «chosen_column_data_actual_values_to_compare_chunk» (FOR FUTURE COMPARISON AFTER MODEL PREDICTING PHASE)
+
    cryptoScrutator.normalizeChosenColumnData() ## NORMALIZE «cryptocoin_dataset»'s «chosen_column»
    cryptoScrutator.splitNormalizedChosenColumnDataBetweenTrainningAndTestingChunks() ## SPLIT «normalized_chosen_column_data» BETWEEN «normalized_trainning_data_chunk» AND «normalized_testing_data_chunk» CHUNKS
    cryptoScrutator.splitNormalizedTrainningChunkBetweenLearningAndPredictionChunks() ## SPLIT «normalized_trainning_data_chunk» BETWEEN «normalized_trainning_data_learning_chunk» AND «normalized_trainning_data_prediction_chunk» CHUNKS
    cryptoScrutator.setNormalizedTestingDataToPredictChunk() ## SET «normalized_testing_data_to_predict_chunk» FROM «normalized_testing_data_chunk»
+
    ## EXECUTE «SimpleRNN» LAYER BASED RNN MODEL
    cryptoScrutator.setRNNModelType("SimpleRNN")
    cryptoScrutator.executeRNNModel()
+
    ## EXECUTE «LSTM» LAYER BASED RNN MODEL
    cryptoScrutator.setRNNModelType("LSTM")
    cryptoScrutator.executeRNNModel()
+
    ## EXECUTE «GRU» LAYER BASED RNN MODEL
    cryptoScrutator.setRNNModelType("GRU")
    cryptoScrutator.executeRNNModel()
+
    cryptoScrutator.plotAllRNNModelsComparisonGraph() ## PLOT ALL RNN MODELS COMPARISON GRAPH
+
+   cryptoScrutator.executeInvestmentSimulation() ## EXECUTE INVESTMENT SIMULATION
 
 if __name__ == "__main__":
    main()

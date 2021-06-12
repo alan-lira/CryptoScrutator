@@ -1,0 +1,4 @@
+initial_balance_in_usd = 0
+initial_balance_in_bitcoin = 100
+selling_bitcoin_strategy_percent = 0.8
+buying_bitcoin_strategy_percent = 0.4
