@@ -54,6 +54,9 @@ class DatasetGenerator:
          coinbase_valid_granularities_in_seconds = [60, 300, 900, 3600, 21600, 86400]
          if self.getFetchGranularityInSeconds() in coinbase_valid_granularities_in_seconds:
             url = "https://api.pro.coinbase.com/products/" + str(self.getCurrencyPair()) + "/candles?start=" + str(self.getFetchStartDate()) + "&end=" + str(self.getFetchEndDate()) + "&granularity=" + str(self.getFetchGranularityInSeconds())
+            ## REMEMBER: The maximum number of data points for a single request is 300 candles.
+            ##           If you wish to retrieve fine granularity data over a larger time range,
+            ##           you will need to make multiple requests with new start/end ranges.
             response = requests.get(url)
             if response.status_code == 200: # HTTP 200 --> OK (Successful Request from «Coinbase» API)
                response_json_data = json.loads(response.text)
@@ -69,6 +72,9 @@ class DatasetGenerator:
          kraken_valid_granularities_in_seconds = [60, 300, 900, 3600, 43200, 86400]
          if self.getFetchGranularityInSeconds() in kraken_valid_granularities_in_seconds:
             url = "https://api.kraken.com/0/public/OHLC?pair=" + str(self.getCurrencyPair().replace("-", "")) + "&interval=" + str(self.getFetchGranularityInSeconds() / 60)
+            ## REMEMBER: The maximum number of data points for a single request is 720 candles.
+            ##           If you wish to retrieve fine granularity data over a larger time range,
+            ##           you will need to make multiple requests with new start/end ranges.
             response = requests.get(url)
             if response.status_code == 200: # HTTP 200 --> OK (Successful Request from «Kraken» API)
                response_json_data = json.loads(response.text)

@@ -1,6 +1,6 @@
 import pandas
 import numpy
-from sklearn.metrics import explained_variance_score, max_error, mean_absolute_error, mean_squared_error, mean_squared_log_error, mean_absolute_percentage_error, median_absolute_error, r2_score, mean_tweedie_deviance
+from sklearn.metrics import explained_variance_score, max_error, mean_absolute_error, mean_squared_error, mean_squared_log_error, mean_absolute_percentage_error, median_absolute_error, r2_score
 
 class DatasetManager:
 
@@ -47,14 +47,17 @@ class DatasetManager:
       return numpy.array(actual_values_to_compare_chunk)
 
    def printRegressionMetrics(self, actual_values, predicted_values):
-      print("Explained Variance Regression Score: " + str(explained_variance_score(actual_values, predicted_values)))
-      print("Maximum Residual Error: " + str(max_error(actual_values, predicted_values)))
-      print("Mean Absolute Error: " + str(mean_absolute_error(actual_values, predicted_values)))
-      print("Mean Square Error: " + str(mean_squared_error(actual_values, predicted_values)))
-      print("Squared Logarithmic (Quadratic) Error: " + str(mean_squared_log_error(actual_values, predicted_values)))
-      print("Mean Absolute Percentage Error (Deviation): " + str(mean_absolute_percentage_error(actual_values, predicted_values)))
-      print("Median Absolute Error: " + str(median_absolute_error(actual_values, predicted_values)))
-      print("Coefficient of Determination (R²): " + str(r2_score(actual_values, predicted_values)))
-      print("Mean Poisson Deviance: " + str(mean_tweedie_deviance(actual_values, predicted_values, power = 1)))
-      print("Mean Gamma Deviance: " + str(mean_tweedie_deviance(actual_values, predicted_values, power = 2)))
+      actual_values[numpy.isnan(actual_values)] = 0
+      actual_values[numpy.isinf(actual_values)] = 0
+      predicted_values[numpy.isnan(predicted_values)] = 0
+      predicted_values[numpy.isinf(predicted_values)] = 0
+      print("Explained Variance Score: " + str(explained_variance_score(actual_values, predicted_values)) + " --> Best possible score: 1.0")
+      print("Maximum Residual Error: " + str(max_error(actual_values, predicted_values)) + " --> Best possible value: 0.0")
+      print("Mean Absolute Error (MAE): " + str(mean_absolute_error(actual_values, predicted_values)) + " --> Best possible value: 0.0")
+      print("Mean Squared Error (MSE): " + str(mean_squared_error(actual_values, predicted_values, squared = True)) + " --> Best possible value: 0.0")
+      print("Root Mean Squared Error (RMSE): " + str(mean_squared_error(actual_values, predicted_values, squared = False)) + " --> Best possible value: 0.0")
+      print("Mean Squared Logarithmic Error (MSLE): " + str(mean_squared_log_error(actual_values, predicted_values)) + " --> Best possible value: 0.0")
+      print("Mean Absolute Percentage Error (MAPE): " + str(mean_absolute_percentage_error(actual_values, predicted_values)) + " --> Best possible value: 0.0")
+      print("Median Absolute Deviation (MAD): " + str(median_absolute_error(actual_values, predicted_values)) + " --> Best possible value: 0.0")
+      print("Coefficient of Determination (R²): " + str(r2_score(actual_values, predicted_values)) + " --> Best possible score: 1.0")
       print("\n")

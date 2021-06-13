@@ -1,10 +1,10 @@
-auto_generate_dataset_boolean = True
+auto_generate_dataset_boolean = False
 exchanger = Kraken
 crypto_currency = BTC
 currency = USD
 fetch_granularity_in_seconds = 86400
-fetch_start_date = 2020-08-16T00:00:00
-fetch_end_date = 2021-06-12T00:00:00
-dataset_file = datasets/BTC-USD_from_2014-12-01_to_2020-06-04(2001_days).csv
+fetch_start_date = 2014-09-17
+fetch_end_date = 2021-06-12
+dataset_file = datasets/Yahoo_BTC-USD_Monthly_2014-09-17_to_2021-06-12.csv
 sorting_column = Date
 chosen_column = Close

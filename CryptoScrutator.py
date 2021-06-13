@@ -5,6 +5,7 @@ import string
 import time
 from DatasetGenerator import *
 from DatasetManager import *
+from datetime import date
 from GraphPlotter import *
 from NaiveInvestor import *
 from RecurrentNeuralNetworkManager import *
@@ -126,9 +127,17 @@ class CryptoScrutator:
                      print("'fetch_granularity_in_seconds' parameter must be higher than 0.")
                      raise SystemExit
                elif key == "fetch_start_date":
-                  self.fetch_start_date = str(value)
+                  try:
+                     self.fetch_start_date = str(date(int(value.split("-")[0]), int(value.split("-")[1]), int(value.split("-")[2])))
+                  except ValueError:
+                     print("'fetch_start_date' parameter only accepts ISO 8601 format (e.g., YYYY-MM-DD).")
+                     raise SystemExit
                elif key == "fetch_end_date":
-                  self.fetch_end_date = str(value)
+                  try:
+                     self.fetch_end_date = str(date(int(value.split("-")[0]), int(value.split("-")[1]), int(value.split("-")[2])))
+                  except ValueError:
+                     print("'fetch_end_date' parameter only accepts ISO 8601 format (e.g., YYYY-MM-DD).")
+                     raise SystemExit
                elif key == "dataset_file":
                   if self.auto_generate_dataset_boolean == False:
                      dataset_file = str(value)
