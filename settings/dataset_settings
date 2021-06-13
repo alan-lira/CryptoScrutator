@@ -5,6 +5,6 @@ currency = USD
 fetch_granularity_in_seconds = 86400
 fetch_start_date = 2014-09-17
 fetch_end_date = 2021-06-12
-dataset_file = datasets/Yahoo_BTC-USD_Monthly_2014-09-17_to_2021-06-12.csv
+dataset_file = datasets/Yahoo_BTC-USD_Monthly_from_2014-09-17_to_2021-06-12.csv
 sorting_column = Date
 chosen_column = Close

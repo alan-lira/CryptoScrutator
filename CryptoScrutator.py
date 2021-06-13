@@ -19,7 +19,7 @@ class CryptoScrutator:
       self.graphPlotter = GraphPlotter()
       self.naiveInvestor = NaiveInvestor()
       self.recurrentNeuralNetworkManager = RecurrentNeuralNetworkManager()
-      self.min_max_scaler = MinMaxScaler()
+      self.min_max_scaler = MinMaxScaler(feature_range = (0, 1))
       self.print_metrics_history_boolean = None
       self.plot_metrics_graphs_boolean = None
       self.plot_actual_values_vs_predicted_values_graph_boolean = None
