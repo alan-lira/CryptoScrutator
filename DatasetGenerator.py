@@ -51,29 +51,71 @@ class DatasetGenerator:
 
    def fetchJSONData(self):
       if self.getExchanger() == "Coinbase":
-         url = "https://api.pro.coinbase.com/products/" + str(self.getCurrencyPair()) + "/candles?start=" + str(self.getFetchStartDate()) + "&end=" + str(self.getFetchEndDate()) + "&granularity=" + str(self.getFetchGranularityInSeconds())
-         response = requests.get(url)
-         if response.status_code == 200: # HTTP 200 --> OK (Successful Request from Coinbase API)
-            response_json_data = json.loads(response.text)
-            self.setResponseJSONData(response_json_data)
+         coinbase_valid_granularities_in_seconds = [60, 300, 900, 3600, 21600, 86400]
+         if self.getFetchGranularityInSeconds() in coinbase_valid_granularities_in_seconds:
+            url = "https://api.pro.coinbase.com/products/" + str(self.getCurrencyPair()) + "/candles?start=" + str(self.getFetchStartDate()) + "&end=" + str(self.getFetchEndDate()) + "&granularity=" + str(self.getFetchGranularityInSeconds())
+            response = requests.get(url)
+            if response.status_code == 200: # HTTP 200 --> OK (Successful Request from «Coinbase» API)
+               response_json_data = json.loads(response.text)
+               self.setResponseJSONData(response_json_data)
+            else:
+               print("ERROR: COULD NOT FETCH DATA FROM «Coinbase» API!")
+               raise SystemExit
          else:
-            print("ERROR: COULD NOT FETCH DATA FROM «Coinbase» API!")
-            raise SystemExit
+               print("ERROR: «Coinbase» API ONLY ACCEPTS THE FOLLOWING GRANULARITIES (IN SECONDS): " + str(coinbase_valid_granularities_in_seconds))
+               print("UPDATE «fetch_granularity_in_seconds» PARAMETER WITH ONE OF THEM.")
+               raise SystemExit
+      elif self.getExchanger() == "Kraken":
+         kraken_valid_granularities_in_seconds = [60, 300, 900, 3600, 43200, 86400]
+         if self.getFetchGranularityInSeconds() in kraken_valid_granularities_in_seconds:
+            url = "https://api.kraken.com/0/public/OHLC?pair=" + str(self.getCurrencyPair().replace("-", "")) + "&interval=" + str(self.getFetchGranularityInSeconds() / 60)
+            response = requests.get(url)
+            if response.status_code == 200: # HTTP 200 --> OK (Successful Request from «Kraken» API)
+               response_json_data = json.loads(response.text)
+               self.setResponseJSONData(response_json_data)
+            else:
+               print("ERROR: COULD NOT FETCH DATA FROM «Kraken» API!")
+               raise SystemExit
+         else:
+               print("ERROR: «Kraken» API ONLY ACCEPTS THE FOLLOWING GRANULARITIES (IN SECONDS): " + str(kraken_valid_granularities_in_seconds))
+               print("UPDATE «fetch_granularity_in_seconds» PARAMETER WITH ONE OF THEM.")
+               raise SystemExit
 
    def generateDataset(self):
-      days_count = (dateutil.parser.parse(self.getFetchEndDate()) - dateutil.parser.parse(self.getFetchStartDate())).days
-      fetch_start_date_formatted = dateutil.parser.parse(self.getFetchStartDate()).strftime("%Y-%m-%d")
-      fetch_end_date_formatted = dateutil.parser.parse(self.getFetchEndDate()).strftime("%Y-%m-%d")
-      dataframe = None
       dataset_directory = "datasets/"
-      dataset_name = self.getExchanger() + "_" + self.getCurrencyPair() + "_from_" + str(fetch_start_date_formatted) + "_to_" + str(fetch_end_date_formatted) + "(" + str(days_count) + "_days)"
       dataset_extension = ".csv"
-      dataset_file_name = dataset_directory + dataset_name + dataset_extension
+      dataframe = None
       if self.getExchanger() == "Coinbase":
          dataframe = pandas.DataFrame(self.getResponseJSONData(), columns = ["Unix", "Open", "High", "Low", "Close", "Volume " + self.getCurrencyPair().split("-")[0]])
          if dataframe is not None:
             dataframe.insert(0, "Date", pandas.to_datetime(dataframe["Unix"], unit = "s"), True)
             dataframe.drop("Unix", axis = 1, inplace = True)
+            fetch_start_date_formatted = dateutil.parser.parse(str(dataframe.tail(1)["Date"].tolist()[0])).strftime("%Y-%m-%d")
+            fetch_end_date_formatted = dateutil.parser.parse(str(dataframe.head(1)["Date"].tolist()[0])).strftime("%Y-%m-%d")
+            days_count = (dateutil.parser.parse(fetch_end_date_formatted) - dateutil.parser.parse(fetch_start_date_formatted)).days + 1
+            dataset_name = self.getExchanger() + "_" + self.getCurrencyPair() + "_from_" + str(fetch_start_date_formatted) + "_to_" + str(fetch_end_date_formatted) + "(" + str(days_count) + "_days)"
+            dataset_file_name = dataset_directory + dataset_name + dataset_extension
+            dataframe.to_csv(dataset_file_name, index = False)
+         else:
+            print("ERROR: NO DATA RETRIEVED FROM «" + self.getExchanger() + "» Exchanger!")
+            raise SystemExit
+      elif self.getExchanger() == "Kraken":
+         result = self.getResponseJSONData()["result"]
+         keys = []
+         for item in result:
+            keys.append(item)
+         dataframe = pandas.DataFrame(result[keys[0]], columns = ["Unix", "Open", "High", "Low", "Close", "VWAP", "Volume " + self.getCurrencyPair().split("-")[0], "TradeCount"])
+         if dataframe is not None:
+            dataframe.insert(0, "Date", pandas.to_datetime(dataframe["Unix"], unit = "s"), True)
+            dataframe.drop("Unix", axis = 1, inplace = True)
+            dataframe.drop("VWAP", axis = 1, inplace = True)
+            dataframe.drop("TradeCount", axis = 1, inplace = True)
+            dataframe.sort_values("Date")
+            fetch_start_date_formatted = dateutil.parser.parse(str(dataframe.head(1)["Date"].tolist()[0])).strftime("%Y-%m-%d")
+            fetch_end_date_formatted = dateutil.parser.parse(str(dataframe.tail(1)["Date"].tolist()[0])).strftime("%Y-%m-%d")
+            days_count = (dateutil.parser.parse(fetch_end_date_formatted) - dateutil.parser.parse(fetch_start_date_formatted)).days + 1
+            dataset_name = self.getExchanger() + "_" + self.getCurrencyPair() + "_from_" + str(fetch_start_date_formatted) + "_to_" + str(fetch_end_date_formatted) + "(" + str(days_count) + "_days)"
+            dataset_file_name = dataset_directory + dataset_name + dataset_extension
             dataframe.to_csv(dataset_file_name, index = False)
          else:
             print("ERROR: NO DATA RETRIEVED FROM «" + self.getExchanger() + "» Exchanger!")

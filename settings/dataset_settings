@@ -1,5 +1,5 @@
-auto_generate_dataset_boolean = False
-exchanger = Coinbase
+auto_generate_dataset_boolean = True
+exchanger = Kraken
 crypto_currency = BTC
 currency = USD
 fetch_granularity_in_seconds = 86400
