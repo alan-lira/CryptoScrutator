@@ -1,4 +1,10 @@
-cryptocoin_name = Bitcoin
-dataset_file = datasets/bitcoin_test_sample.csv
+auto_generate_dataset_boolean = False
+exchanger = Coinbase
+crypto_currency = BTC
+currency = USD
+fetch_granularity_in_seconds = 86400
+fetch_start_date = 2020-08-16T00:00:00
+fetch_end_date = 2021-06-12T00:00:00
+dataset_file = datasets/BTC-USD_from_2014-12-01_to_2020-06-04(2001_days).csv
 sorting_column = Date
 chosen_column = Close

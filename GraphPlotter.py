@@ -80,7 +80,7 @@ class GraphPlotter:
          if bar.get_height() > 0:
             order_of_magnitude = math.floor(math.log10(bar.get_height()))
          if order_of_magnitude <= 0:
-            yval = numpy.round(bar.get_height(), -order_of_magnitude)
+            yval = bar.get_height()
          else:
             yval = numpy.round(bar.get_height(), 2)
          pyplot.text(bar.get_x() + bar.get_width() / 2., yval, yval, ha = self.text_ha, va = self.text_va, fontsize = self.text_fontsize, fontweight = self.text_fontweight)

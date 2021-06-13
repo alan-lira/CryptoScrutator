@@ -3,6 +3,7 @@ import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # AVOID «TensorFlow» LOGGING
 import string
 import time
+from DatasetGenerator import *
 from DatasetManager import *
 from GraphPlotter import *
 from NaiveInvestor import *
@@ -12,6 +13,7 @@ from sklearn.preprocessing import MinMaxScaler
 class CryptoScrutator:
 
    def __init__(self):
+      self.datasetGenerator = DatasetGenerator()
       self.datasetManager = DatasetManager()
       self.graphPlotter = GraphPlotter()
       self.naiveInvestor = NaiveInvestor()
@@ -22,7 +24,13 @@ class CryptoScrutator:
       self.plot_actual_values_vs_predicted_values_graph_boolean = None
       self.print_regression_metrics_boolean = None
       self.plot_all_rnn_models_comparison_graph_boolean = None
-      self.cryptocoin_name = None
+      self.auto_generate_dataset_boolean = None
+      self.exchanger = None
+      self.crypto_currency = None
+      self.currency = None
+      self.fetch_granularity_in_seconds = None
+      self.fetch_start_date = None
+      self.fetch_end_date = None
       self.dataset_file = None
       self.sorting_column = None
       self.chosen_column = None
@@ -102,16 +110,42 @@ class CryptoScrutator:
             key = splitted_line[0]
             value = splitted_line[1]
             if len(splitted_line) > 1:
-               if key == "cryptocoin_name":
-                  self.cryptocoin_name = str(value)
-               elif key == "dataset_file":
-                  dataset_file = str(value)
-                  dataset_file_exists = os.path.isfile(dataset_file)
-                  if dataset_file_exists:
-                     self.dataset_file = dataset_file
+               if key == "auto_generate_dataset_boolean":
+                  self.auto_generate_dataset_boolean = value == "True"
+               elif key == "exchanger":
+                  self.exchanger = str(value)
+               elif key == "crypto_currency":
+                  self.crypto_currency = str(value)
+               elif key == "currency":
+                  self.currency = str(value)
+               elif key == "fetch_granularity_in_seconds":
+                  fetch_granularity_in_seconds = int(value)
+                  if fetch_granularity_in_seconds > 0:
+                     self.fetch_granularity_in_seconds = fetch_granularity_in_seconds
                   else:
-                     print("Dataset '" + dataset_file + "' not found!")
+                     print("'fetch_granularity_in_seconds' parameter must be higher than 0.")
                      raise SystemExit
+               elif key == "fetch_start_date":
+                  self.fetch_start_date = str(value)
+               elif key == "fetch_end_date":
+                  self.fetch_end_date = str(value)
+               elif key == "dataset_file":
+                  if self.auto_generate_dataset_boolean == False:
+                     dataset_file = str(value)
+                     dataset_file_exists = os.path.isfile(dataset_file)
+                     if dataset_file_exists:
+                        self.dataset_file = dataset_file
+                     else:
+                        print("Dataset '" + dataset_file + "' not found!")
+                        raise SystemExit
+                  else:
+                     self.datasetGenerator.setExchanger(self.exchanger)
+                     self.datasetGenerator.setCurrencyPair(self.crypto_currency + "-" + self.currency)
+                     self.datasetGenerator.setFetchGranularityInSeconds(self.fetch_granularity_in_seconds)
+                     self.datasetGenerator.setFetchStartDate(self.fetch_start_date)
+                     self.datasetGenerator.setFetchEndDate(self.fetch_end_date)
+                     self.datasetGenerator.fetchJSONData()
+                     self.dataset_file = self.datasetGenerator.generateDataset()
                elif key == "sorting_column":
                   sorting_column = str(value)
                   dataset_file_header = self._getDatasetFileDataHeader()
@@ -319,6 +353,7 @@ class CryptoScrutator:
 
    def loadCryptocoinDatasetCSV(self):
       self.cryptocoin_dataset = self.datasetManager.loadDataset(self.dataset_file)
+      print("Dataset '" + self.dataset_file + "' has been successfully loaded.")
 
    def sortCryptocoinDatasetBySortingColumn(self):
       self.cryptocoin_dataset = self.datasetManager.sortDatasetByColumn(self.cryptocoin_dataset, self.sorting_column)
@@ -535,11 +570,11 @@ class CryptoScrutator:
       ## PLOT ACTUAL VALUES VS PREDICTED VALUES GRAPH
       if self.plot_actual_values_vs_predicted_values_graph_boolean == True:
          ## PLOT GRAPH: (X = 'Days', Y = 'Actual Value' Vs 'Predicted Value')
-         graph_title = self.cryptocoin_name + " Predictor"
-         y_label = self.chosen_column + " (USD)"
+         graph_title = self.crypto_currency + " Predictor"
+         y_label = self.chosen_column + " (" + self.currency + ")"
          x_label = "Days"
          x_ticks_size = len(self.chosen_column_data_actual_values_to_compare_chunk)
-         curves_labels = ["Actual Value (USD)"]
+         curves_labels = ["Actual Value (" + self.currency + ")"]
          curves_colors = ["gold"]
          curves_datas = [self.chosen_column_data_actual_values_to_compare_chunk]
          max_actual_values = max(self.chosen_column_data_actual_values_to_compare_chunk)
@@ -547,17 +582,17 @@ class CryptoScrutator:
          max_lstm_predicted_values = 0
          max_gru_predicted_values = 0
          if self.rnn_model_type == "SimpleRNN":
-            curves_labels.append("Predicted Value «"+self.rnn_model_type+"» (USD)")
+            curves_labels.append("Predicted Value «"+self.rnn_model_type+"» (" + self.currency + ")")
             curves_colors.append("firebrick")
             curves_datas.append(self.simplernn_predicted_values)
             max_simplernn_predicted_values = max(self.simplernn_predicted_values)
          elif self.rnn_model_type == "LSTM":
-            curves_labels.append("Predicted Value «"+self.rnn_model_type+"» (USD)")
+            curves_labels.append("Predicted Value «"+self.rnn_model_type+"» (" + self.currency + ")")
             curves_colors.append("lightseagreen")
             curves_datas.append(self.lstm_predicted_values)
             max_lstm_predicted_values = max(self.lstm_predicted_values)
          elif self.rnn_model_type == "GRU":
-            curves_labels.append("Predicted Value «"+self.rnn_model_type+"» (USD)")
+            curves_labels.append("Predicted Value «"+self.rnn_model_type+"» (" + self.currency + ")")
             curves_colors.append("darkslateblue")
             curves_datas.append(self.gru_predicted_values)
             max_gru_predicted_values = max(self.gru_predicted_values)
@@ -606,8 +641,8 @@ class CryptoScrutator:
          gru_predicted_values_valid = self.gru_predicted_values is not None and any(self.gru_predicted_values)
          if chosen_column_data_actual_values_to_compare_chunk_valid and (simplernn_predicted_values_valid or lstm_predicted_values_valid or gru_predicted_values_valid):
             ## PLOT GRAPH: (X = «Days», Y = «Actual Values» Vs [«Predicted Values (SimpleRNN)» Vs «Predicted Values (LSTM)» Vs «Predicted Values (GRU)»])
-            graph_title = self.cryptocoin_name + " Predictor"
-            y_label = self.chosen_column + " (USD)"
+            graph_title = self.crypto_currency + " Predictor"
+            y_label = self.chosen_column + " (" + self.currency + ")"
             x_label = "Days"
             x_ticks_size = len(self.chosen_column_data_actual_values_to_compare_chunk)
             curves_labels = []
@@ -618,22 +653,22 @@ class CryptoScrutator:
             max_lstm_predicted_values = 0
             max_gru_predicted_values = 0
             if chosen_column_data_actual_values_to_compare_chunk_valid:
-               curves_labels.append("Actual Value (USD)")
+               curves_labels.append("Actual Value (" + self.currency + ")")
                curves_colors.append("gold")
                curves_datas.append(self.chosen_column_data_actual_values_to_compare_chunk)
                max_actual_values = max(self.chosen_column_data_actual_values_to_compare_chunk)
             if simplernn_predicted_values_valid:
-               curves_labels.append("Predicted Value «SimpleRNN» (USD)")
+               curves_labels.append("Predicted Value «SimpleRNN» (" + self.currency + ")")
                curves_colors.append("firebrick")
                curves_datas.append(self.simplernn_predicted_values)
                max_simplernn_predicted_values = max(self.simplernn_predicted_values)
             if lstm_predicted_values_valid:
-               curves_labels.append("Predicted Value «LSTM» (USD)")
+               curves_labels.append("Predicted Value «LSTM» (" + self.currency + ")")
                curves_colors.append("lightseagreen")
                curves_datas.append(self.lstm_predicted_values)
                max_lstm_predicted_values = max(self.lstm_predicted_values)
             if gru_predicted_values_valid:
-               curves_labels.append("Predicted Value «GRU» (USD)")
+               curves_labels.append("Predicted Value «GRU» (" + self.currency + ")")
                curves_colors.append("darkslateblue")
                curves_datas.append(self.gru_predicted_values)
                max_gru_predicted_values = max(self.gru_predicted_values)
@@ -691,135 +726,145 @@ class CryptoScrutator:
             gru_chosen_column_prediction_string = " | GRU_" + self.chosen_column + "_Prediction = " + str(self.gru_predicted_values[row])
          print(date_column_string + open_column_string + chosen_column_string + simplernn_chosen_column_prediction_string + lstm_chosen_column_prediction_string + gru_chosen_column_prediction_string)
 
-      usd_bars_labels = []
-      usd_bars_colors = []
-      usd_bars_heights = []
-      usd_graph_title = "Investment Simulation"
-      usd_graph_subtitle = "Initial Balance: " + str(self.initial_balance_in_usd) + " USD + " + str(self.initial_balance_in_bitcoin) + " BTC" + "\nSelling Bitcoin Strategy Percent: " + str(self.selling_bitcoin_strategy_percent) + " | Buying Bitcoin Strategy Percent: " + str(self.buying_bitcoin_strategy_percent)
-      usd_y_label = "USD Balance"
-      usd_x_label = "Predictor"
+      if self.currency == "USD" and self.crypto_currency == "BTC":
+         ## SIMULATE BTC-USD INVESTIMENTS
+         usd_bars_labels = []
+         usd_bars_colors = []
+         usd_bars_heights = []
+         usd_graph_title = "Investment Simulation"
+         usd_graph_subtitle = "Initial Balance: " + str(self.initial_balance_in_usd) + " " + self.currency + " + " + str(self.initial_balance_in_bitcoin) + " " + self.crypto_currency + "\nSelling Bitcoin Strategy Percent: " + str(self.selling_bitcoin_strategy_percent) + " | Buying Bitcoin Strategy Percent: " + str(self.buying_bitcoin_strategy_percent)
+         usd_y_label = self.currency + " Balance"
+         usd_x_label = "Predictor"
 
-      bitcoin_bars_labels = []
-      bitcoin_bars_colors = []
-      bitcoin_bars_heights = []
-      bitcoin_graph_title = "Investment Simulation"
-      bitcoin_graph_subtitle = "Initial Balance: " + str(self.initial_balance_in_usd) + " USD + " + str(self.initial_balance_in_bitcoin) + " BTC" + "\nSelling Bitcoin Strategy Percent: " + str(self.selling_bitcoin_strategy_percent) + " | Buying Bitcoin Strategy Percent: " + str(self.buying_bitcoin_strategy_percent)
-      bitcoin_y_label = "BTC Balance"
-      bitcoin_x_label = "Predictor"
+         bitcoin_bars_labels = []
+         bitcoin_bars_colors = []
+         bitcoin_bars_heights = []
+         bitcoin_graph_title = "Investment Simulation"
+         bitcoin_graph_subtitle = "Initial Balance: " + str(self.initial_balance_in_usd) + " " + self.currency + " + " + str(self.initial_balance_in_bitcoin) + " " + self.crypto_currency + "\nSelling Bitcoin Strategy Percent: " + str(self.selling_bitcoin_strategy_percent) + " | Buying Bitcoin Strategy Percent: " + str(self.buying_bitcoin_strategy_percent)
+         bitcoin_y_label = self.crypto_currency + " Balance"
+         bitcoin_x_label = "Predictor"
 
-      if chosen_column_data_actual_values_to_compare_chunk_valid:
-         ## SIMULATE INVESTIMENTS WITH ACTUAL VALUES (AS IF THEY WERE PERFECTLY PREDICTED, HYPOTHETICALLY)
-         hypothetical_perfect_prediction_usd_balance = None
-         hypothetical_perfect_prediction_bitcoin_balance = None
-         self.naiveInvestor.setBalanceInUSD(self.initial_balance_in_usd)
-         self.naiveInvestor.setBalanceInBitcoin(self.initial_balance_in_bitcoin)
-         print("«Hypothetical Perfect Prediction» Initial Balance in USD: " + str(self.naiveInvestor.getBalanceInUSD()))
-         print("«Hypothetical Perfect Prediction» Initial Balance in Bitcoin: " + str(self.naiveInvestor.getBalanceInBitcoin()))
-         for row in range(len(self.chosen_column_data_actual_values_to_compare_chunk)):
-            self.naiveInvestor.investmentAction(date_column_data_actual_values_to_compare_chunk[row],
-                                                open_column_data_actual_values_to_compare_chunk[row],
-                                                self.chosen_column_data_actual_values_to_compare_chunk[row])
-         hypothetical_perfect_prediction_usd_balance = self.naiveInvestor.getBalanceInUSD()
-         hypothetical_perfect_prediction_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
-         print("«Hypothetical Perfect Prediction» Final Balance in USD: " + str(hypothetical_perfect_prediction_usd_balance))
-         print("«Hypothetical Perfect Prediction» Final Balance in Bitcoin: " + str(hypothetical_perfect_prediction_bitcoin_balance))
-         usd_bars_labels.append("«Hypothetical Perfect Prediction»")
-         usd_bars_colors.append("gold")
-         usd_bars_heights.append(float(hypothetical_perfect_prediction_usd_balance))
-         bitcoin_bars_labels.append("«Hypothetical Perfect Prediction»")
-         bitcoin_bars_colors.append("gold")
-         bitcoin_bars_heights.append(float(hypothetical_perfect_prediction_bitcoin_balance))
+         if chosen_column_data_actual_values_to_compare_chunk_valid:
+            ## SIMULATE INVESTIMENTS WITH ACTUAL VALUES (AS IF THEY WERE PERFECTLY PREDICTED, HYPOTHETICALLY)
+            hypothetical_perfect_prediction_usd_balance = None
+            hypothetical_perfect_prediction_bitcoin_balance = None
+            self.naiveInvestor.setBalanceInUSD(self.initial_balance_in_usd)
+            self.naiveInvestor.setBalanceInBitcoin(self.initial_balance_in_bitcoin)
+            print("«Hypothetical Perfect Prediction» Initial Balance in " + self.currency + ": " + str(self.naiveInvestor.getBalanceInUSD()))
+            print("«Hypothetical Perfect Prediction» Initial Balance in " + self.crypto_currency + ": " + str(self.naiveInvestor.getBalanceInBitcoin()))
+            for row in range(len(self.chosen_column_data_actual_values_to_compare_chunk)):
+               self.naiveInvestor.investmentAction(date_column_data_actual_values_to_compare_chunk[row],
+                                                   self.currency,
+                                                   self.crypto_currency,
+                                                   open_column_data_actual_values_to_compare_chunk[row],
+                                                   self.chosen_column_data_actual_values_to_compare_chunk[row])
+            hypothetical_perfect_prediction_usd_balance = self.naiveInvestor.getBalanceInUSD()
+            hypothetical_perfect_prediction_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
+            print("«Hypothetical Perfect Prediction» Final Balance in " + self.currency + ": " + str(hypothetical_perfect_prediction_usd_balance))
+            print("«Hypothetical Perfect Prediction» Final Balance in Bitcoin: " + str(hypothetical_perfect_prediction_bitcoin_balance))
+            usd_bars_labels.append("«Hypothetical Perfect Prediction»")
+            usd_bars_colors.append("gold")
+            usd_bars_heights.append(float(hypothetical_perfect_prediction_usd_balance))
+            bitcoin_bars_labels.append("«Hypothetical Perfect Prediction»")
+            bitcoin_bars_colors.append("gold")
+            bitcoin_bars_heights.append(float(hypothetical_perfect_prediction_bitcoin_balance))
 
-      if simplernn_predicted_values_valid:
-         ## SIMULATE INVESTIMENTS WITH «SimpleRNN» LAYER BASED RNN MODEL PREDICTED VALUES
-         simplernn_usd_balance = None
-         simplernn_bitcoin_balance = None
-         self.naiveInvestor.setBalanceInUSD(self.initial_balance_in_usd)
-         self.naiveInvestor.setBalanceInBitcoin(self.initial_balance_in_bitcoin)
-         print("«SimpleRNN» Initial Balance in USD: " + str(self.naiveInvestor.getBalanceInUSD()))
-         print("«SimpleRNN» Initial Balance in Bitcoin: " + str(self.naiveInvestor.getBalanceInBitcoin()))
-         for row in range(len(self.chosen_column_data_actual_values_to_compare_chunk)):
-            self.naiveInvestor.investmentAction(date_column_data_actual_values_to_compare_chunk[row],
-                                                open_column_data_actual_values_to_compare_chunk[row],
-                                                self.simplernn_predicted_values[row])
-         simplernn_usd_balance = self.naiveInvestor.getBalanceInUSD()
-         simplernn_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
-         print("«SimpleRNN» Final Balance in USD: " + str(simplernn_usd_balance))
-         print("«SimpleRNN» Final Balance in Bitcoin: " + str(simplernn_bitcoin_balance))
-         usd_bars_labels.append("«SimpleRNN»")
-         usd_bars_colors.append("firebrick")
-         usd_bars_heights.append(float(simplernn_usd_balance))
-         bitcoin_bars_labels.append("«SimpleRNN»")
-         bitcoin_bars_colors.append("firebrick")
-         bitcoin_bars_heights.append(float(simplernn_bitcoin_balance))
+         if simplernn_predicted_values_valid:
+            ## SIMULATE INVESTIMENTS WITH «SimpleRNN» LAYER BASED RNN MODEL PREDICTED VALUES
+            simplernn_usd_balance = None
+            simplernn_bitcoin_balance = None
+            self.naiveInvestor.setBalanceInUSD(self.initial_balance_in_usd)
+            self.naiveInvestor.setBalanceInBitcoin(self.initial_balance_in_bitcoin)
+            print("«SimpleRNN» Initial Balance in " + self.currency + ": " + str(self.naiveInvestor.getBalanceInUSD()))
+            print("«SimpleRNN» Initial Balance in Bitcoin: " + str(self.naiveInvestor.getBalanceInBitcoin()))
+            for row in range(len(self.chosen_column_data_actual_values_to_compare_chunk)):
+               self.naiveInvestor.investmentAction(date_column_data_actual_values_to_compare_chunk[row],
+                                                   self.currency,
+                                                   self.crypto_currency,
+                                                   open_column_data_actual_values_to_compare_chunk[row],
+                                                   self.simplernn_predicted_values[row])
+            simplernn_usd_balance = self.naiveInvestor.getBalanceInUSD()
+            simplernn_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
+            print("«SimpleRNN» Final Balance in " + self.currency + ": " + str(simplernn_usd_balance))
+            print("«SimpleRNN» Final Balance in Bitcoin: " + str(simplernn_bitcoin_balance))
+            usd_bars_labels.append("«SimpleRNN»")
+            usd_bars_colors.append("firebrick")
+            usd_bars_heights.append(float(simplernn_usd_balance))
+            bitcoin_bars_labels.append("«SimpleRNN»")
+            bitcoin_bars_colors.append("firebrick")
+            bitcoin_bars_heights.append(float(simplernn_bitcoin_balance))
 
-      if lstm_predicted_values_valid:
-         ## SIMULATE INVESTIMENTS WITH «LSTM» LAYER BASED RNN MODEL PREDICTED VALUES
-         lstm_usd_balance = None
-         lstm_bitcoin_balance = None
-         self.naiveInvestor.setBalanceInUSD(self.initial_balance_in_usd)
-         self.naiveInvestor.setBalanceInBitcoin(self.initial_balance_in_bitcoin)
-         print("«LSTM» Initial Balance in USD: " + str(self.naiveInvestor.getBalanceInUSD()))
-         print("«LSTM» Initial Balance in Bitcoin: " + str(self.naiveInvestor.getBalanceInBitcoin()))
-         for row in range(len(self.chosen_column_data_actual_values_to_compare_chunk)):
-            self.naiveInvestor.investmentAction(date_column_data_actual_values_to_compare_chunk[row],
-                                                open_column_data_actual_values_to_compare_chunk[row],
-                                                self.lstm_predicted_values[row])
-         lstm_usd_balance = self.naiveInvestor.getBalanceInUSD()
-         lstm_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
-         print("«LSTM» Final Balance in USD: " + str(lstm_usd_balance))
-         print("«LSTM» Final Balance in Bitcoin: " + str(lstm_bitcoin_balance))
-         usd_bars_labels.append("«LSTM»")
-         usd_bars_colors.append("lightseagreen")
-         usd_bars_heights.append(float(lstm_usd_balance))
-         bitcoin_bars_labels.append("«LSTM»")
-         bitcoin_bars_colors.append("lightseagreen")
-         bitcoin_bars_heights.append(float(lstm_bitcoin_balance))
+         if lstm_predicted_values_valid:
+            ## SIMULATE INVESTIMENTS WITH «LSTM» LAYER BASED RNN MODEL PREDICTED VALUES
+            lstm_usd_balance = None
+            lstm_bitcoin_balance = None
+            self.naiveInvestor.setBalanceInUSD(self.initial_balance_in_usd)
+            self.naiveInvestor.setBalanceInBitcoin(self.initial_balance_in_bitcoin)
+            print("«LSTM» Initial Balance in " + self.currency + ": " + str(self.naiveInvestor.getBalanceInUSD()))
+            print("«LSTM» Initial Balance in Bitcoin: " + str(self.naiveInvestor.getBalanceInBitcoin()))
+            for row in range(len(self.chosen_column_data_actual_values_to_compare_chunk)):
+               self.naiveInvestor.investmentAction(date_column_data_actual_values_to_compare_chunk[row],
+                                                   self.currency,
+                                                   self.crypto_currency,
+                                                   open_column_data_actual_values_to_compare_chunk[row],
+                                                   self.lstm_predicted_values[row])
+            lstm_usd_balance = self.naiveInvestor.getBalanceInUSD()
+            lstm_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
+            print("«LSTM» Final Balance in " + self.currency + ": " + str(lstm_usd_balance))
+            print("«LSTM» Final Balance in Bitcoin: " + str(lstm_bitcoin_balance))
+            usd_bars_labels.append("«LSTM»")
+            usd_bars_colors.append("lightseagreen")
+            usd_bars_heights.append(float(lstm_usd_balance))
+            bitcoin_bars_labels.append("«LSTM»")
+            bitcoin_bars_colors.append("lightseagreen")
+            bitcoin_bars_heights.append(float(lstm_bitcoin_balance))
 
-      if gru_predicted_values_valid:
-         ## SIMULATE INVESTIMENTS WITH «GRU» LAYER BASED RNN MODEL PREDICTED VALUES
-         gru_usd_balance = None
-         gru_bitcoin_balance = None
-         self.naiveInvestor.setBalanceInUSD(self.initial_balance_in_usd)
-         self.naiveInvestor.setBalanceInBitcoin(self.initial_balance_in_bitcoin)
-         print("«GRU» Initial Balance in USD: " + str(self.naiveInvestor.getBalanceInUSD()))
-         print("«GRU» Initial Balance in Bitcoin: " + str(self.naiveInvestor.getBalanceInBitcoin()))
-         for row in range(len(self.chosen_column_data_actual_values_to_compare_chunk)):
-            self.naiveInvestor.investmentAction(date_column_data_actual_values_to_compare_chunk[row],
-                                                open_column_data_actual_values_to_compare_chunk[row],
-                                                self.gru_predicted_values[row])
-         gru_usd_balance = self.naiveInvestor.getBalanceInUSD()
-         gru_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
-         print("«GRU» Final Balance in USD: " + str(gru_usd_balance))
-         print("«GRU» Final Balance in Bitcoin: " + str(gru_bitcoin_balance))
-         usd_bars_labels.append("«GRU»")
-         usd_bars_colors.append("darkslateblue")
-         usd_bars_heights.append(float(gru_usd_balance))
-         bitcoin_bars_labels.append("«GRU»")
-         bitcoin_bars_colors.append("darkslateblue")
-         bitcoin_bars_heights.append(float(gru_bitcoin_balance))
+         if gru_predicted_values_valid:
+            ## SIMULATE INVESTIMENTS WITH «GRU» LAYER BASED RNN MODEL PREDICTED VALUES
+            gru_usd_balance = None
+            gru_bitcoin_balance = None
+            self.naiveInvestor.setBalanceInUSD(self.initial_balance_in_usd)
+            self.naiveInvestor.setBalanceInBitcoin(self.initial_balance_in_bitcoin)
+            print("«GRU» Initial Balance in " + self.currency + ": " + str(self.naiveInvestor.getBalanceInUSD()))
+            print("«GRU» Initial Balance in Bitcoin: " + str(self.naiveInvestor.getBalanceInBitcoin()))
+            for row in range(len(self.chosen_column_data_actual_values_to_compare_chunk)):
+               self.naiveInvestor.investmentAction(date_column_data_actual_values_to_compare_chunk[row],
+                                                   self.currency,
+                                                   self.crypto_currency,
+                                                   open_column_data_actual_values_to_compare_chunk[row],
+                                                   self.gru_predicted_values[row])
+            gru_usd_balance = self.naiveInvestor.getBalanceInUSD()
+            gru_bitcoin_balance = self.naiveInvestor.getBalanceInBitcoin()
+            print("«GRU» Final Balance in " + self.currency + ": " + str(gru_usd_balance))
+            print("«GRU» Final Balance in Bitcoin: " + str(gru_bitcoin_balance))
+            usd_bars_labels.append("«GRU»")
+            usd_bars_colors.append("darkslateblue")
+            usd_bars_heights.append(float(gru_usd_balance))
+            bitcoin_bars_labels.append("«GRU»")
+            bitcoin_bars_colors.append("darkslateblue")
+            bitcoin_bars_heights.append(float(gru_bitcoin_balance))
 
-      usd_greatest_order_of_magnitude = math.floor(math.log10(max(usd_bars_heights)))
+         usd_greatest_order_of_magnitude = math.floor(math.log10(max(usd_bars_heights)))
 
-      self.graphPlotter.plotBarsGraph(usd_graph_title,
-                                      usd_graph_subtitle,
-                                      usd_y_label,
-                                      usd_x_label,
-                                      usd_bars_labels,
-                                      usd_bars_colors,
-                                      usd_bars_heights,
-                                      usd_greatest_order_of_magnitude)
+         self.graphPlotter.plotBarsGraph(usd_graph_title,
+                                         usd_graph_subtitle,
+                                         usd_y_label,
+                                         usd_x_label,
+                                         usd_bars_labels,
+                                         usd_bars_colors,
+                                         usd_bars_heights,
+                                         usd_greatest_order_of_magnitude)
 
-      bitcoin_greatest_order_of_magnitude = math.floor(math.log10(max(bitcoin_bars_heights)))
+         bitcoin_greatest_order_of_magnitude = math.floor(math.log10(max(bitcoin_bars_heights)))
 
-      self.graphPlotter.plotBarsGraph(bitcoin_graph_title,
-                                      bitcoin_graph_subtitle,
-                                      bitcoin_y_label,
-                                      bitcoin_x_label,
-                                      bitcoin_bars_labels,
-                                      bitcoin_bars_colors,
-                                      bitcoin_bars_heights,
-                                      bitcoin_greatest_order_of_magnitude)
+         self.graphPlotter.plotBarsGraph(bitcoin_graph_title,
+                                         bitcoin_graph_subtitle,
+                                         bitcoin_y_label,
+                                         bitcoin_x_label,
+                                         bitcoin_bars_labels,
+                                         bitcoin_bars_colors,
+                                         bitcoin_bars_heights,
+                                         bitcoin_greatest_order_of_magnitude)
 
 def main():
    cryptoScrutator = CryptoScrutator()
