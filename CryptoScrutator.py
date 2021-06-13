@@ -3,13 +3,13 @@ import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # AVOID «TensorFlow» LOGGING
 import string
 import time
-from DatasetGenerator import *
-from DatasetManager import *
 from datetime import date
-from GraphPlotter import *
-from NaiveInvestor import *
-from RecurrentNeuralNetworkManager import *
 from sklearn.preprocessing import MinMaxScaler
+from Simulator.NaiveInvestor import *
+from Util.DatasetGenerator import *
+from Util.DatasetManager import *
+from Util.GraphPlotter import *
+from Util.RecurrentNeuralNetworkManager import *
 
 class CryptoScrutator:
 
@@ -384,7 +384,7 @@ class CryptoScrutator:
       chosen_column_has_null_data = self._verifyDatasetFileColumnHasNullData(self.chosen_column)
       sorting_column_has_null_data = self._verifyDatasetFileColumnHasNullData(self.sorting_column)
       if chosen_column_has_null_data or sorting_column_has_null_data:
-         dataset_file_path = "datasets/"
+         dataset_file_path = "Datasets/"
          dataset_file_extension = ".csv"
          dataset_file_name = self.dataset_file.split(dataset_file_path)[1].split(dataset_file_extension)[0]
          dataset_new_file_name = dataset_file_path + dataset_file_name + "_handled" + dataset_file_extension
@@ -878,10 +878,10 @@ class CryptoScrutator:
 def main():
    cryptoScrutator = CryptoScrutator()
 
-   cryptoScrutator.loadCryptoScrutatorSettings("settings/crypto_scrutator_settings") ## LOAD «crypto_scrutator_settings»
-   cryptoScrutator.loadDatasetSettings("settings/dataset_settings") ## LOAD «dataset_settings»
-   cryptoScrutator.loadRNNModelHyperparametersSettings("settings/rnn_model_hyperparameters") ## LOAD «rnn_model_hyperparameters»
-   cryptoScrutator.loadInvestmentSimulatorSettings("settings/investment_simulator_settings") ## LOAD «investment_simulator_settings»
+   cryptoScrutator.loadCryptoScrutatorSettings("Settings/crypto_scrutator_settings") ## LOAD «crypto_scrutator_settings»
+   cryptoScrutator.loadDatasetSettings("Settings/dataset_settings") ## LOAD «dataset_settings»
+   cryptoScrutator.loadRNNModelHyperparametersSettings("Settings/rnn_model_hyperparameters") ## LOAD «rnn_model_hyperparameters»
+   cryptoScrutator.loadInvestmentSimulatorSettings("Settings/investment_simulator_settings") ## LOAD «investment_simulator_settings»
 
    cryptoScrutator.handleDatasetFileChosenAndSortingColumnsNullData() ## HANDLE «dataset_file»'s «chosen_column» AND «sorting_column» NULL DATA
    cryptoScrutator.verifyDatasetFileHasEnoughDataToBePartitioned() ## VERIFY IF «dataset_file» HAS ENOUGH DATA TO BE PARTITIONED

@@ -1,5 +1,6 @@
 import dateutil.parser
 import json
+import os
 import pandas
 import requests
 
@@ -88,7 +89,8 @@ class DatasetGenerator:
                raise SystemExit
 
    def generateDataset(self):
-      dataset_directory = "datasets/"
+      dataset_directory = "Datasets/" + self.getExchanger() + "/"
+      os.makedirs(dataset_directory, exist_ok = True)
       dataset_extension = ".csv"
       dataframe = None
       if self.getExchanger() == "Coinbase":
@@ -98,8 +100,7 @@ class DatasetGenerator:
             dataframe.drop("Unix", axis = 1, inplace = True)
             fetch_start_date_formatted = dateutil.parser.parse(str(dataframe.tail(1)["Date"].tolist()[0])).strftime("%Y-%m-%d")
             fetch_end_date_formatted = dateutil.parser.parse(str(dataframe.head(1)["Date"].tolist()[0])).strftime("%Y-%m-%d")
-            days_count = (dateutil.parser.parse(fetch_end_date_formatted) - dateutil.parser.parse(fetch_start_date_formatted)).days + 1
-            dataset_name = self.getExchanger() + "_" + self.getCurrencyPair() + "_from_" + str(fetch_start_date_formatted) + "_to_" + str(fetch_end_date_formatted) + "(" + str(days_count) + "_days)"
+            dataset_name = self.getExchanger() + "_" + self.getCurrencyPair() + "_From_" + str(fetch_start_date_formatted) + "_To_" + str(fetch_end_date_formatted)
             dataset_file_name = dataset_directory + dataset_name + dataset_extension
             dataframe.to_csv(dataset_file_name, index = False)
          else:
@@ -119,8 +120,7 @@ class DatasetGenerator:
             dataframe.sort_values("Date")
             fetch_start_date_formatted = dateutil.parser.parse(str(dataframe.head(1)["Date"].tolist()[0])).strftime("%Y-%m-%d")
             fetch_end_date_formatted = dateutil.parser.parse(str(dataframe.tail(1)["Date"].tolist()[0])).strftime("%Y-%m-%d")
-            days_count = (dateutil.parser.parse(fetch_end_date_formatted) - dateutil.parser.parse(fetch_start_date_formatted)).days + 1
-            dataset_name = self.getExchanger() + "_" + self.getCurrencyPair() + "_from_" + str(fetch_start_date_formatted) + "_to_" + str(fetch_end_date_formatted) + "(" + str(days_count) + "_days)"
+            dataset_name = self.getExchanger() + "_" + self.getCurrencyPair() + "_From_" + str(fetch_start_date_formatted) + "_To_" + str(fetch_end_date_formatted)
             dataset_file_name = dataset_directory + dataset_name + dataset_extension
             dataframe.to_csv(dataset_file_name, index = False)
          else:
