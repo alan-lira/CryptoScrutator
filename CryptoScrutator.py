@@ -373,7 +373,7 @@ class CryptoScrutator:
          dataset_file_header = next(csvReader)
          column_to_verify_index = dataset_file_header.index(column_to_verify)
          for dataset_file_row in csvReader:
-            if dataset_file_row[column_to_verify_index] == "":
+            if dataset_file_row[column_to_verify_index] == "" or dataset_file_row[column_to_verify_index] == "null":
                return True
       return False
 
@@ -397,7 +397,8 @@ class CryptoScrutator:
                chosen_column_index = dataset_file_header.index(self.chosen_column)
                sorting_column_index = dataset_file_header.index(self.sorting_column)
                for dataset_file_row in csvReader:
-                  if dataset_file_row[chosen_column_index] != "" and dataset_file_row[sorting_column_index] != "":
+                  if (dataset_file_row[chosen_column_index] != "" and dataset_file_row[chosen_column_index] != "null") and \
+                     (dataset_file_row[sorting_column_index] != "" and dataset_file_row[sorting_column_index] != "null"):
                      csvWriter.writerow(dataset_file_row)
          self._setDatasetFile(dataset_new_file_name)
 

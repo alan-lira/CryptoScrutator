@@ -1,4 +1,4 @@
-# cryptopredictor
+# Crypto Scrutator
 
 ## 💻 Prerequisites (Linux-based O.S.)
 * Update available packages list for installation: `sudo apt-get update`
